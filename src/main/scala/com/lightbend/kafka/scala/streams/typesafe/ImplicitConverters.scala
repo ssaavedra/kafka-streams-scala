@@ -12,7 +12,7 @@ import org.apache.kafka.streams.kstream._
   *
   * @author Santiago Saavedra (ssaavedra@openshine.com)
   */
-private[typesafe] object implicits {
+object ImplicitConverters {
 
   implicit final class TSKStreamAuto[K, V]
   (val inner: KStream[K, V])

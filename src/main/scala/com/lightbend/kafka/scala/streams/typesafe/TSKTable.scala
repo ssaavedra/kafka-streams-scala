@@ -1,11 +1,9 @@
 package com.lightbend.kafka.scala.streams.typesafe
 
 import com.lightbend.kafka.scala.streams.FunctionConversions._
-import com.lightbend.kafka.scala.streams.typesafe.implicits._
-import org.apache.kafka.streams.{Consumed, StreamsBuilder}
+import com.lightbend.kafka.scala.streams.typesafe.ImplicitConverters._
 import org.apache.kafka.streams.kstream.{KTable, Materialized, Serialized}
-
-import scala.language.higherKinds
+import org.apache.kafka.streams.{Consumed, StreamsBuilder}
 
 /**
   * @author Santiago Saavedra (ssaavedra@openshine.com)
