@@ -1,5 +1,6 @@
 package com.lightbend.kafka.scala.streams.typesafe
 
+import com.lightbend.kafka.scala.streams.typesafe.unsafe.ConverterToTypeSafer
 import org.apache.kafka.streams.kstream._
 
 /** Conversions to keep the underlying abstraction from leaking. These allow
@@ -54,6 +55,41 @@ private[typesafe] object implicits {
     extends AnyVal {
     def safe: TSTimeWindowedKStream[K, V] =
       new TSTimeWindowedKStream[K, V](inner)
+  }
+
+  implicit object TSKGroupedStreamAuto
+    extends ConverterToTypeSafer[KGroupedStream, TSKGroupedStream] {
+    override def safe[K, V](src: KGroupedStream[K, V]): TSKGroupedStream[K, V] =
+      src.safe
+  }
+
+  implicit object TSKStreamAuto
+    extends ConverterToTypeSafer[KStream, TSKStream] {
+    override def safe[K, V](src: KStream[K, V]): TSKStream[K, V] = src.safe
+  }
+
+  implicit object TSKTableAuto
+    extends ConverterToTypeSafer[KTable, TSKTable] {
+    override def safe[K, V](src: KTable[K, V]): TSKTable[K, V] = src.safe
+  }
+
+  implicit object TSKGroupedTableAuto
+    extends ConverterToTypeSafer[KGroupedTable, TSKGroupedTable] {
+    override def safe[K, V](src: KGroupedTable[K, V])
+    : TSKGroupedTable[K, V] = src.safe
+  }
+
+  implicit object TSSessionWindowedKStreamAuto
+    extends ConverterToTypeSafer[SessionWindowedKStream,
+      TSSessionWindowedKStream] {
+    override def safe[K, V](src: SessionWindowedKStream[K, V])
+    : TSSessionWindowedKStream[K, V] = src.safe
+  }
+
+  implicit object TSTimeWindowedKStreamAuto
+    extends ConverterToTypeSafer[TimeWindowedKStream, TSTimeWindowedKStream] {
+    override def safe[K, V](src: TimeWindowedKStream[K, V])
+    : TSTimeWindowedKStream[K, V] = src.safe
   }
 
 }
