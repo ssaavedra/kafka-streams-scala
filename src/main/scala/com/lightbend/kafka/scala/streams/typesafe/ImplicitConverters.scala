@@ -19,6 +19,8 @@ package com.lightbend.kafka.scala.streams.typesafe
 import com.lightbend.kafka.scala.streams.typesafe.unsafe.ConverterToTypeSafer
 import org.apache.kafka.streams.kstream._
 
+import scala.language.implicitConversions
+
 /** Conversions to keep the underlying abstraction from leaking. These allow
   * us to always return a TS object instead of the underlying one.
   *
@@ -28,81 +30,61 @@ import org.apache.kafka.streams.kstream._
   */
 object ImplicitConverters {
 
-  implicit class TSKStreamAuto[K, V]
-  (val inner: KStream[K, V])
-    extends AnyVal {
-    def safe: TSKStream[K, V] =
+  implicit def wrapKStream[K, V](inner: KStream[K, V]): TSKStream[K, V] =
       new TSKStream[K, V](inner)
-  }
 
-  implicit class TSKTableAuto[K, V]
-  (val inner: KTable[K, V])
-    extends AnyVal {
-    def safe: TSKTable[K, V] =
+  implicit def wrapKTable[K, V](inner: KTable[K, V]): TSKTable[K, V] =
       new TSKTable[K, V](inner)
-  }
 
-  implicit class TSKGroupedStreamAuto[K, V]
-  (val inner: KGroupedStream[K, V])
-    extends AnyVal {
-    def safe: TSKGroupedStream[K, V] =
+  implicit def wrapKGroupedStream[K, V](inner: KGroupedStream[K, V])
+  : TSKGroupedStream[K, V] =
       new TSKGroupedStream[K, V](inner)
-  }
 
-  implicit class TSKGroupedTableAuto[K, V]
-  (val inner: KGroupedTable[K, V])
-    extends AnyVal {
-    def safe: TSKGroupedTable[K, V] =
+  implicit def wrapKGroupedTable[K, V](inner: KGroupedTable[K, V])
+  : TSKGroupedTable[K, V] =
       new TSKGroupedTable[K, V](inner)
-  }
 
-  implicit class TSSessionWindowedKStreamAuto[K, V]
-  (val inner: SessionWindowedKStream[K, V])
-    extends AnyVal {
-    def safe: TSSessionWindowedKStream[K, V] =
+  implicit def wrapSessionWindowedKStream[K, V]
+  (inner: SessionWindowedKStream[K, V]): TSSessionWindowedKStream[K, V] =
       new TSSessionWindowedKStream[K, V](inner)
-  }
 
-  implicit class TSTimeWindowedKStreamAuto[K, V]
-  (val inner: TimeWindowedKStream[K, V])
-    extends AnyVal {
-    def safe: TSTimeWindowedKStream[K, V] =
+  implicit def wrapTSTimeWindowedKStream[K, V]
+  (inner: TimeWindowedKStream[K, V]): TSTimeWindowedKStream[K, V] =
       new TSTimeWindowedKStream[K, V](inner)
-  }
 
   implicit object TSKGroupedStreamAuto
     extends ConverterToTypeSafer[KGroupedStream, TSKGroupedStream] {
     override def safe[K, V](src: KGroupedStream[K, V]): TSKGroupedStream[K, V] =
-      src.safe
+      src
   }
 
   implicit object TSKStreamAuto
     extends ConverterToTypeSafer[KStream, TSKStream] {
-    override def safe[K, V](src: KStream[K, V]): TSKStream[K, V] = src.safe
+    override def safe[K, V](src: KStream[K, V]): TSKStream[K, V] = src
   }
 
   implicit object TSKTableAuto
     extends ConverterToTypeSafer[KTable, TSKTable] {
-    override def safe[K, V](src: KTable[K, V]): TSKTable[K, V] = src.safe
+    override def safe[K, V](src: KTable[K, V]): TSKTable[K, V] = src
   }
 
   implicit object TSKGroupedTableAuto
     extends ConverterToTypeSafer[KGroupedTable, TSKGroupedTable] {
     override def safe[K, V](src: KGroupedTable[K, V])
-    : TSKGroupedTable[K, V] = src.safe
+    : TSKGroupedTable[K, V] = src
   }
 
   implicit object TSSessionWindowedKStreamAuto
     extends ConverterToTypeSafer[SessionWindowedKStream,
       TSSessionWindowedKStream] {
     override def safe[K, V](src: SessionWindowedKStream[K, V])
-    : TSSessionWindowedKStream[K, V] = src.safe
+    : TSSessionWindowedKStream[K, V] = src
   }
 
   implicit object TSTimeWindowedKStreamAuto
     extends ConverterToTypeSafer[TimeWindowedKStream, TSTimeWindowedKStream] {
     override def safe[K, V](src: TimeWindowedKStream[K, V])
-    : TSTimeWindowedKStream[K, V] = src.safe
+    : TSTimeWindowedKStream[K, V] = src
   }
 
 }

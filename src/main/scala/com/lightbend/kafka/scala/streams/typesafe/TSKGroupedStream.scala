@@ -34,7 +34,6 @@ class TSKGroupedStream[K, V]
     unsafe
       .aggregate(initializer.asInitializer, aggregator.asAggregator,
         materialized)
-      .safe
 
   def count(implicit materialized: Materialized[K, java.lang.Long, kvs])
   : TSKTable[K, Long] =
@@ -42,24 +41,20 @@ class TSKGroupedStream[K, V]
       .count(materialized)
       .mapValues[scala.Long](
       { l: java.lang.Long => Long2long(l) }.asValueMapper)
-      .safe
 
   def reduce(reducer: (V, V) => V)
             (implicit materialized: Materialized[K, V, kvs])
   : TSKTable[K, V] =
     unsafe
       .reduce(reducer.asReducer, materialized)
-      .safe
 
   def windowedBy(windows: SessionWindows)
   : TSSessionWindowedKStream[K, V] =
     unsafe
       .windowedBy(windows)
-      .safe
 
   def windowedBy[W <: Window](windows: Windows[W])
   : TSTimeWindowedKStream[K, V] =
     unsafe
       .windowedBy(windows)
-      .safe
 }

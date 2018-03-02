@@ -32,14 +32,12 @@ class TSKGroupedTable[K, V]
       .count(materialized)
       .mapValues[scala.Long](
       { l: java.lang.Long => Long2long(l) }.asValueMapper)
-      .safe
 
   def reduce(adder: (V, V) => V,
              subtractor: (V, V) => V)
             (implicit materialized: Materialized[K, V, kvs]): TSKTable[K, V] =
     unsafe
       .reduce(adder.asReducer, subtractor.asReducer, materialized)
-      .safe
 
   def aggregate[VR](initializer: => VR,
                     adder: (K, V, VR) => VR,
@@ -51,5 +49,4 @@ class TSKGroupedTable[K, V]
         adder.asAggregator,
         subtractor.asAggregator,
         materialized)
-      .safe
 }

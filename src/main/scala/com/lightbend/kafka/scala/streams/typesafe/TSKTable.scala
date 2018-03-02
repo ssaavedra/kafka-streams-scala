@@ -28,14 +28,12 @@ class TSKTable[K, V](protected[typesafe] override val unsafe: KTable[K, V])
   : TSKGroupedTable[KR, VR] =
     unsafe
       .groupBy(selector.asKeyValueMapper, serialized)
-      .safe
 
   def mapValues[VR](mapper: V => VR)
                    (implicit materialized: Materialized[K, VR, kvs])
   : TSKTable[K, VR] =
     unsafe
       .mapValues[VR](mapper.asValueMapper, materialized)
-      .safe
 
   def filterValues(predicate: V => Boolean)
                   (implicit materialized: Materialized[K, V, kvs])
@@ -46,28 +44,24 @@ class TSKTable[K, V](protected[typesafe] override val unsafe: KTable[K, V])
   : TSKTable[K, V] =
     unsafe
       .filter(predicate.asPredicate, materialized)
-      .safe
 
   def filterNot(predicate: (K, V) => Boolean)
                (implicit materialized: Materialized[K, V, kvs])
   : TSKTable[K, V] =
     unsafe
       .filterNot(predicate.asPredicate, materialized)
-      .safe
 
-  def toStream: TSKStream[K, V] = unsafe.toStream.safe
+  def toStream: TSKStream[K, V] = unsafe.toStream
 
   def toStream[KR](keyMapper: (K, V) => KR): TSKStream[KR, V] =
     unsafe
       .toStream[KR](keyMapper.asKeyValueMapper)
-      .safe
 
   def groupBy[KR, VR](selector: (K, V) => (KR, VR))
                      (implicit serialized: Serialized[KR, VR])
   : TSKGroupedTable[KR, VR]
   = unsafe
     .groupBy(selector.asKeyValueMapper, serialized)
-    .safe
 
   def join[VO, VR](other: TSKTable[K, VO],
                    joiner: (V, VO) => VR)
@@ -75,7 +69,6 @@ class TSKTable[K, V](protected[typesafe] override val unsafe: KTable[K, V])
   : TSKTable[K, VR] =
     unsafe
       .join[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
-      .safe
 
   def leftJoin[VO, VR](other: TSKTable[K, VO],
                        joiner: (V, VO) => VR)
@@ -83,7 +76,6 @@ class TSKTable[K, V](protected[typesafe] override val unsafe: KTable[K, V])
   : TSKTable[K, VR] =
     unsafe
       .leftJoin[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
-      .safe
 
   def outerJoin[VO, VR](other: TSKTable[K, VO],
                         joiner: (V, VO) => VR)
@@ -91,7 +83,6 @@ class TSKTable[K, V](protected[typesafe] override val unsafe: KTable[K, V])
   : TSKTable[K, VR] =
     unsafe
       .outerJoin[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
-      .safe
 
   def queryableStoreName: String = unsafe.queryableStoreName()
 

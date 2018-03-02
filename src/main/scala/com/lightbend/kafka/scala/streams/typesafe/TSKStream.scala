@@ -33,7 +33,9 @@ class TSKStream[K, V](protected[typesafe] override val unsafe: KStream[K, V])
   extends AnyVal with TSKType[KStream, K, V] {
 
   def branch(predicates: ((K, V) => Boolean)*): Array[TSKStream[K, V]] = {
-    unsafe.branch(predicates.map(_.asPredicate): _*).map(_.safe)
+    unsafe
+      .branch(predicates.map(_.asPredicate): _*)
+      .map(wrapKStream)
   }
 
   def groupBy[KR](selector: (K, V) => KR)
@@ -41,32 +43,29 @@ class TSKStream[K, V](protected[typesafe] override val unsafe: KStream[K, V])
   : TSKGroupedStream[KR, V] =
     unsafe
       .groupBy(selector.asKeyValueMapper, serialized)
-      .safe
 
   def groupByKey(implicit serialized: Serialized[K, V])
   : TSKGroupedStream[K, V] =
     unsafe
       .groupByKey(serialized)
-      .safe
 
   def join[VO, VR](otherStream: TSKStream[K, VO],
                    joiner: (V, VO) => VR,
                    windows: JoinWindows)
                   (implicit joined: Joined[K, V, VO]): TSKStream[K, VR] =
     unsafe.join[VO, VR](otherStream.unsafe, joiner.asValueJoiner, windows,
-      joined).safe
+      joined)
 
   def join[VT, VR](table: TSKTable[K, VT],
                    joiner: (V, VT) => VR)
                   (implicit joined: Joined[K, V, VT]): TSKStream[K, VR] =
-    unsafe.join[VT, VR](table.unsafe, joiner.asValueJoiner, joined).safe
+    unsafe.join[VT, VR](table.unsafe, joiner.asValueJoiner, joined)
 
   def join[GK, GV, RV](globalKTable: GlobalKTable[GK, GV],
                        keyValueMapper: (K, V) => GK,
                        joiner: (V, GV) => RV): TSKStream[K, RV] =
     unsafe
       .join[GK, GV, RV](globalKTable, keyValueMapper(_, _), joiner(_, _))
-      .safe
 
   def leftJoin[VO, VR](otherStream: TSKStream[K, VO],
                        joiner: (V, VO) => VR,
@@ -78,14 +77,12 @@ class TSKStream[K, V](protected[typesafe] override val unsafe: KStream[K, V])
       joiner.asValueJoiner,
       windows,
       joined)
-      .safe
 
   def leftJoin[VT, VR](table: TSKTable[K, VT],
                        joiner: (V, VT) => VR)
                       (implicit joined: Joined[K, V, VT]): TSKStream[K, VR]
   = unsafe
     .leftJoin[VT, VR](table.unsafe, joiner.asValueJoiner, joined)
-    .safe
 
   def leftJoin[GK, GV, RV](globalKTable: GlobalKTable[GK, GV],
                            keyValueMapper: (K, V) => GK,
@@ -96,7 +93,6 @@ class TSKStream[K, V](protected[typesafe] override val unsafe: KStream[K, V])
       globalKTable,
       keyValueMapper.asKeyValueMapper,
       joiner.asValueJoiner)
-      .safe
 
   def outerJoin[VO, VR](otherStream: TSKStream[K, VO],
                         joiner: (V, VO) => VR,
@@ -106,50 +102,48 @@ class TSKStream[K, V](protected[typesafe] override val unsafe: KStream[K, V])
     unsafe
       .outerJoin[VO, VR](otherStream.unsafe, joiner.asValueJoiner, windows,
       joined)
-      .safe
 
   def merge(stream: TSKStream[K, V]): TSKStream[K, V] =
-    unsafe.merge(stream.unsafe).safe
+    unsafe.merge(stream.unsafe)
 
   def peek(action: (K, V) => Unit): TSKStream[K, V] =
-    unsafe.peek(action(_, _)).safe
+    unsafe.peek(action(_, _))
 
   def split(predicate: (K, V) => Boolean)
   : (TSKStream[K, V], TSKStream[K, V]) =
     (filter(predicate), filterNot(predicate))
 
   def filter(predicate: (K, V) => Boolean): TSKStream[K, V] =
-    unsafe.filter(predicate.asPredicate).safe
+    unsafe.filter(predicate.asPredicate)
 
   def filterNot(predicate: (K, V) => Boolean): TSKStream[K, V] =
-    unsafe.filterNot(predicate.asPredicate).safe
+    unsafe.filterNot(predicate.asPredicate)
 
   def selectKey[KR](mapper: (K, V) => KR): TSKStream[KR, V] = {
-    unsafe.selectKey[KR]((k: K, v: V) => mapper(k, v)).safe
+    unsafe.selectKey[KR]((k: K, v: V) => mapper(k, v))
   }
 
   def map[KR, VR](mapper: (K, V) => (KR, VR)): TSKStream[KR, VR] =
-    unsafe.map[KR, VR](mapper.asKeyValueMapper).safe
+    unsafe.map[KR, VR](mapper.asKeyValueMapper)
 
   def mapValues[VR](mapper: V => VR): TSKStream[K, VR] =
-    unsafe.mapValues[VR](mapper.asValueMapper).safe
+    unsafe.mapValues[VR](mapper.asValueMapper)
 
   def flatMap[KR, VR](mapper: (K, V) => Iterable[(KR, VR)])
   : TSKStream[KR, VR] = {
     val kvMapper = mapper.tupled andThen (iter => iter.map(Tuple2ToKeyValue)
       .asJava)
 
-    unsafe.flatMap[KR, VR]((k, v) => kvMapper(k, v)).safe
+    unsafe.flatMap[KR, VR]((k, v) => kvMapper(k, v))
   }
 
   def flatMapValues[VR](mapper: V => Iterable[VR]): TSKStream[K, VR] =
     unsafe.flatMapValues({
       v: V => mapper(v).asJava
     }.asValueMapper)
-      .safe
 
   def filterValues(predicate: V => Boolean): TSKStream[K, V] =
-    unsafe.filter((k, v) => predicate(v)).safe
+    unsafe.filter((k, v) => predicate(v))
 
   def print(printed: Printed[K, V]): Unit = unsafe.print(printed)
 
@@ -182,7 +176,6 @@ class TSKStream[K, V](protected[typesafe] override val unsafe: KStream[K, V])
       }
     unsafe
       .transform(transformerSupplierJ, stateStoreNames: _*)
-      .safe
   }
 
   def transformValues[VR](valueTransformerSupplier: () => ValueTransformer[V,
@@ -192,7 +185,6 @@ class TSKStream[K, V](protected[typesafe] override val unsafe: KStream[K, V])
       valueTransformerSupplier()
     unsafe
       .transformValues[VR](valueTransformerSupplierJ, stateStoreNames: _*)
-      .safe
   }
 
   def process(processorSupplier: () => Processor[K, V],
@@ -206,7 +198,6 @@ class TSKStream[K, V](protected[typesafe] override val unsafe: KStream[K, V])
              (implicit produced: Produced[K, V]): TSKStream[K, V] =
     unsafe
       .through(topic, produced)
-      .safe
 
   def to(topic: String)(implicit produced: Produced[K, V]): Unit = {
     unsafe.to(topic, produced)

@@ -34,7 +34,6 @@ class TSSessionWindowedKStream[K, V]
       aggregator.asAggregator,
       merger.asMerger,
       materialized)
-      .safe
   }
 
   def count(implicit materialized: Materialized[K, java.lang.Long, ssb])
@@ -43,13 +42,13 @@ class TSSessionWindowedKStream[K, V]
       .count(materialized)
       .mapValues[scala.Long]({
       l: java.lang.Long => Long2long(l)
-    }.asValueMapper).safe
+    }.asValueMapper)
 
 
   def reduce(reducer: (V, V) => V)
             (implicit materialized: Materialized[K, V, ssb])
   : TSKTable[Windowed[K], V] = {
-    unsafe.reduce(reducer.asReducer, materialized).safe
+    unsafe.reduce(reducer.asReducer, materialized)
   }
 
 }
