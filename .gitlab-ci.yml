@@ -1,0 +1,64 @@
+stages:
+  - build
+  - test
+  - pages
+  - publish
+
+variables:
+  DOCKER_DRIVER: overlay
+  # Using internal registry for performance reasons
+  DOCKER_OPTS: --registry-mirror=$DOCKER_REGISTRY_MIRROR
+
+
+###########################################################
+#                          TEST                           #
+###########################################################
+
+Documentation:
+  retry: 2
+  stage: test
+  image: linkyard/docker-sbt
+  cache:
+    key: sbt
+    paths:
+      - cache/
+  script:
+    - mkdir -p public
+    - mkdir -p cache/sbt/boot cache/ivy2
+    - sbt -Dsbt.boot.directory=./cache/sbt/boot -Dsbt.ivy.home=./cache/ivy2 +doc
+    - ls -l
+    - mv target/scala-2.12/api public/api-scala-2.12
+    - mv target/scala-2.11/api public/api-scala-2.11
+  artifacts:
+    paths:
+      - public/
+
+###########################################################
+#                            PAGE                         #
+###########################################################
+
+pages:
+  image: node:6
+  retry: 2
+  stage: pages
+  dependencies:
+    - Documentation
+  script:
+    - ls public
+  artifacts:
+    paths:
+      - public
+
+Publish to maven repo:
+  image: linkyard/docker-sbt
+  stage: publish
+  cache:
+    key: sbt
+    paths:
+      - cache/
+  script:
+    - mkdir -p cache/sbt/boot cache/ivy2
+    - sbt -Dsbt.boot.directory=./cache/sbt/boot -Dsbt.ivy.home=./cache/ivy2 +publish
+
+  only:
+    - tags@libs/kafka-streams-scala

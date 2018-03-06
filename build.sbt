@@ -2,9 +2,7 @@ import Dependencies._
 
 name := "kafka-streams-scala"
 
-organization := "com.lightbend"
-
-version := "0.1.2"
+organization := "com.openshine"
 
 scalaVersion := Versions.Scala_2_12_Version
 
@@ -37,22 +35,23 @@ developers := List(
   Developer("ssaavedra", "Santiago Saavedra", "@ssaavedra", url("https://github.com/ssaavedra"))
 )
 
-organizationName := "lightbend"
+organizationName := "openshine"
 
-organizationHomepage := Some(url("http://lightbend.com/"))
+organizationHomepage := Some(url("http://openshine.com/"))
 
 homepage := scmInfo.value map (_.browseUrl)
 
-scmInfo := Some(ScmInfo(url("https://github.com/lightbend/kafka-streams-scala"), "git@github.com:lightbend/kafka-streams-scala.git"))
+scmInfo := Some(ScmInfo(url("https://github.com/openshine/kafka-streams-scala"),
+  "git@github.com:openshine/kafka-streams-scala.git"))
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
-
-publishMavenStyle := true
+publishTo := Option(System.getenv("MAVEN_REPO"))
+  .map("Project Internal Repo" at _)
 
 publishArtifact in Test := false
+
+enablePlugins(GitVersioning)
+
+git.baseVersion := "0.1.git"
+git.useGitDescribe := true
