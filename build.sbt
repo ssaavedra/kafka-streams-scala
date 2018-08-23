@@ -26,7 +26,8 @@ libraryDependencies ++= Seq(
 
 testFrameworks += new TestFramework("minitest.runner.Framework")
 
-licenses := Seq("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+licenses := Seq("Apache-2.0" ->
+  url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 
 developers := List(
   Developer("debasishg", "Debasish Ghosh", "@debasishg", url("https://github.com/debasishg")),
@@ -46,12 +47,13 @@ scmInfo := Some(ScmInfo(url("https://github.com/openshine/kafka-streams-scala"),
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
-publishTo := Option(System.getenv("MAVEN_REPO"))
-  .map("Project Internal Repo" at _)
-
 publishArtifact in Test := false
 
 enablePlugins(GitVersioning)
 
 git.baseVersion := "0.1.git"
 git.useGitDescribe := true
+
+bintrayOrganization := Some("openshine")
+
+bintrayRepository := "maven"
