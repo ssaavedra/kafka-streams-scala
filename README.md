@@ -1,7 +1,6 @@
 # A Scala Interface for the Kafka Streams Java API
 
 [![Build Status](https://secure.travis-ci.org/openshine/kafka-streams-scala.png)](http://travis-ci.org/openshine/kafka-streams-scala)
-
 [![Download](https://api.bintray.com/packages/openshine/maven/kafka-streams-scala/images/download.svg)](https://bintray.com/openshine/maven/kafka-streams-scala/_latestVersion) 
 
 The library wraps Java APIs in Scala thereby providing:
