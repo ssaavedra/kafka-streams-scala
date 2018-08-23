@@ -18,29 +18,66 @@ package com.lightbend.kafka.scala.streams
 
 import org.apache.kafka.common.serialization.{Deserializer => JDeserializer, Serde => JSerde, Serializer => JSerializer}
 
+
+/** A scala.Serde is just a [[JSerde]] with direct methods for serializing
+  * and deserializing values.
+  *
+  * @tparam T the type this serde is able to ser/de
+  */
 trait Serde[T] extends JSerde[T] {
-  override def deserializer(): JDeserializer[T]
-
-  override def serializer(): JSerializer[T]
-
-  override def configure(configs: java.util.Map[String, _], isKey: Boolean): Unit = ()
-
-  override def close(): Unit = ()
-}
-
-trait StatelessScalaSerde[T >: Null] extends JSerde[T] with Serde[T] {
   def serialize(data: T): Array[Byte]
   def deserialize(data: Array[Byte]): Option[T]
+}
 
-  override def deserializer(): Deserializer[T] =
-    (data: Array[Byte]) => deserialize(data)
+/** An adaptor for Java-based serdes so that they meet the Serde interface
+  *
+  * @param inner the [[JSerde]] instance to adapt
+  * @tparam T the type this serde is able to ser/de
+  */
+class JavaSerdeWrapper[T >: Null](val inner: JSerde[T]) extends Serde[T] {
 
-  override def serializer(): Serializer[T] =
-    (data: T) => serialize(data)
+  /** Override this value to change the topic name on the
+    * serialize/deserialize calls
+    */
+  def topic: String = "unknown-topic"
+
+  override def configure(configs: java.util.Map[String, _],
+                         isKey: Boolean): Unit =
+    inner.configure(configs, isKey)
+
+  override def deserializer(): JDeserializer[T] = inner.deserializer()
+
+  override def serializer(): JSerializer[T] = inner.serializer()
+
+  override def close(): Unit = inner.close()
+
+  override def deserialize(data: Array[Byte]): Option[T] = {
+    val d = inner.deserializer()
+    val result = Option(d.deserialize(topic, data))
+    d.close()
+    result
+  }
+
+
+  override def serialize(data: T): Array[Byte] = {
+    val s = inner.serializer()
+    val result = s.serialize(topic, data)
+    s.close()
+    result
+  }
+}
+
+
+trait StatelessScalaSerde[T >: Null] extends Serde[T]
+{
+  override def deserializer(): Deserializer[T] = deserialize _
+
+  override def serializer(): Serializer[T] = serialize _
 }
 
 trait Deserializer[T >: Null] extends JDeserializer[T] {
-  override def configure(configs: java.util.Map[String, _], isKey: Boolean): Unit = ()
+  override def configure(configs: java.util.Map[String, _],
+                         isKey: Boolean): Unit = ()
 
   override def close(): Unit = ()
 
@@ -51,7 +88,8 @@ trait Deserializer[T >: Null] extends JDeserializer[T] {
 }
 
 trait Serializer[T] extends JSerializer[T] {
-  override def configure(configs: java.util.Map[String, _], isKey: Boolean): Unit = ()
+  override def configure(configs: java.util.Map[String, _],
+                         isKey: Boolean): Unit = ()
 
   override def close(): Unit = ()
 

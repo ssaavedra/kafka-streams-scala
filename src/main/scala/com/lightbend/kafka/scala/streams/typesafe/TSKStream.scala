@@ -16,7 +16,6 @@
 package com.lightbend.kafka.scala.streams.typesafe
 
 import com.lightbend.kafka.scala.streams.FunctionConversions._
-import com.lightbend.kafka.scala.streams.ImplicitConversions.Tuple2ToKeyValue
 import com.lightbend.kafka.scala.streams.typesafe.ImplicitConverters._
 import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext,

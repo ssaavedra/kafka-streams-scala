@@ -31,7 +31,6 @@ import org.apache.kafka.common.serialization._
 import org.apache.kafka.streams.kstream.Transformer
 import org.apache.kafka.streams.processor.ProcessorContext
 import org.apache.kafka.streams.{KafkaStreams, KeyValue, StreamsBuilder, StreamsConfig}
-import com.lightbend.kafka.scala.streams.ImplicitConversions.Tuple2ToKeyValue
 
 /**
   * End-to-end integration test that demonstrates how to probabilistically count items in an input stream.
@@ -52,17 +51,17 @@ trait ProbabilisticCountingScalaIntegrationTestData {
   )
 
   val expectedWordCounts: Seq[KeyValue[String, Long]] = Seq(
-    ("hello", 1L),
-    ("kafka", 1L),
-    ("streams", 1L),
-    ("all", 1L),
-    ("streams", 2L),
-    ("lead", 1L),
-    ("to", 1L),
-    ("kafka", 2L),
-    ("join", 1L),
-    ("kafka", 3L),
-    ("summit", 1L)
+    new KeyValue("hello", 1L),
+    new KeyValue("kafka", 1L),
+    new KeyValue("streams", 1L),
+    new KeyValue("all", 1L),
+    new KeyValue("streams", 2L),
+    new KeyValue("lead", 1L),
+    new KeyValue("to", 1L),
+    new KeyValue("kafka", 2L),
+    new KeyValue("join", 1L),
+    new KeyValue("kafka", 3L),
+    new KeyValue("summit", 1L)
   )
 }
 

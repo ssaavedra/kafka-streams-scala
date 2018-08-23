@@ -36,7 +36,7 @@ object unsafe {
     def safe[K, V](src: Src[K, V]): Dst[K, V]
   }
 
-  /** This class provides `.unsafely` instances for
+  /** This class provides public `.unsafely` instances for
     * [[com.lightbend.kafka.scala.streams.typesafe.TSKType]] values that may be
     * needed to provide values that cannot be assumed to be type-safe. You
     * can also use the `.unsafelyNoWrap` construct which does not wrap the
@@ -50,7 +50,7 @@ object unsafe {
     */
   implicit class UnsafelyWrapper[KType[_, _], K, V]
   (private val inner: TSKType[KType, K, V])
-  extends AnyVal {
+    extends AnyVal {
 
     /** Allows the user to perform potentially-unsafe operations with the
       * TSKType, which may be usesful for accessing properties not yet
@@ -81,10 +81,12 @@ object unsafe {
       * @return a SafeDst value that has been transformed by the transformer
       *         on its underlying values
       */
+    @inline
     def unsafely[K1, V1, UnsafeDst[_, _], SafeDst[_, _]]
     (transformer: KType[K, V] => UnsafeDst[K1, V1])
     (implicit wrap: ConverterToTypeSafer[UnsafeDst, SafeDst])
     : SafeDst[K1, V1] = wrap.safe(transformer(inner.unsafe))
+
 
     /** Allows the user to perform potentially-unsafe operations with the
       * TSKType. Take note that this abstraction leaks Dst to the callee.
@@ -93,6 +95,7 @@ object unsafe {
       * @tparam Dst the type of the result of the transformation
       * @return the result of the transformation
       */
+    @inline
     def unsafelyNoWrap[Dst](transformer: KType[K, V] => Dst) =
       transformer(inner.unsafe)
   }

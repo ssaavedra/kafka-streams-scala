@@ -10,15 +10,15 @@ import java.util.Properties
 import java.util.regex.Pattern
 
 import com.lightbend.kafka.scala.server.{KafkaLocalServer, MessageListener, MessageSender, RecordProcessorTrait}
+import org.apache.kafka.common.serialization.{LongDeserializer, StringDeserializer, StringSerializer}
 import minitest.TestSuite
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.common.serialization._
 import org.apache.kafka.streams.{KafkaStreams, KeyValue, StreamsBuilder, StreamsConfig}
 
 object KafkaStreamsTest extends TestSuite[KafkaLocalServer] with WordCountTestData {
 
   override def setup(): KafkaLocalServer = {
-    val s = KafkaLocalServer(true, Some(localStateDir))
+    val s = KafkaLocalServer(cleanOnStart = true, Some(localStateDir))
     s.start()
     s
   }

@@ -17,8 +17,17 @@ package com.lightbend.kafka.scala.streams.typesafe
 
 import scala.language.higherKinds
 
-/** A base type for all base stream classes in the typesafe API.
+/** A base type for all base stream classes in the typesafe API. This is a
+  * Universal Trait, and as such, it can be implemented by value classes.
+  * This makes the whole type system to reside in the compiler but avoids
+  * generating much overhead.
+  *
+  * @tparam T is the underlying type in Java kafka-streams
+  * @tparam K is the type of record keys
+  * @tparam V is the type of record values
   */
-trait TSKType[T[_, _], K, V] extends Any {
+trait TSKType[T[_, _], K, V]
+  extends
+    Any {
   protected[typesafe] def unsafe: T[K, V]
 }

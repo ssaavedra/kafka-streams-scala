@@ -17,7 +17,7 @@ package com.lightbend.kafka.scala.streams.typesafe
 
 import java.nio.ByteBuffer
 
-import org.apache.kafka.common.serialization._
+import org.apache.kafka.common.serialization.{Serdes, Serde}
 import org.apache.kafka.streams.Consumed
 import org.apache.kafka.streams.kstream.{Joined, Materialized, Produced,
   Serialized}
@@ -86,12 +86,12 @@ package object derivations {
   }
 
   trait Default
-    extends serialized
+    extends defaultSerdes
+      with serialized
       with produced
       with consumed
       with joined
       with materialized
-      with defaultSerdes
 
   object Default extends Default
 
