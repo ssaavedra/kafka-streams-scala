@@ -1,14 +1,17 @@
-# A Thin Scala Wrapper Around the Kafka Streams Java API
+# A Scala Interface for the Kafka Streams Java API
 
-[![Build Status](https://secure.travis-ci.org/lightbend/kafka-streams-scala.png)](http://travis-ci.org/lightbend/kafka-streams-scala)
+[![Build Status](https://secure.travis-ci.org/openshine/kafka-streams-scala.png)](http://travis-ci.org/openshine/kafka-streams-scala)
 
 The library wraps Java APIs in Scala thereby providing:
 
+1. type safety for serializers against data types
 1. much better type inference in Scala
 2. less boilerplate in application code
 3. the usual builder-style composition that developers get with the original Java API
 
-The design of the library was inspired by the work started by Alexis Seigneurin in [this repository](https://github.com/aseigneurin/kafka-streams-scala). 
+The design of the library was inspired by the work started by Alexis
+Seigneurin in [this repository](https://github.com/aseigneurin/kafka-streams-scala) and
+later continued by Lightbend in [this repository](http://github.com/lightbend/kafka-streams-scala/).
 
 ## Quick Start
 
@@ -17,13 +20,15 @@ The design of the library was inspired by the work started by Alexis Seigneurin 
 ```scala
 val kafka_streams_scala_version = "0.1.2"
 
-libraryDependencies ++= Seq("com.lightbend" %%
+libraryDependencies ++= Seq("com.openshine" %%
   "kafka-streams-scala" % kafka_streams_scala_version)
 ```
 
 > Note: `kafka-streams-scala` supports onwards Kafka Streams `1.0.0`.
 
-The API docs for `kafka-streams-scala` is available [here](https://developer.lightbend.com/docs/api/kafka-streams-scala/0.1.2/com/lightbend/kafka/scala/streams) for Scala 2.12 and [here](https://developer.lightbend.com/docs/api/kafka-streams-scala_2.11/0.1.2/#package) for Scala 2.11.
+The API docs for `kafka-streams-scala` is not yet publicly built at
+the moment.
+
 
 ## Running the Tests
 
@@ -43,7 +48,7 @@ Here's a sample code fragment using the Scala wrapper library. Compare this with
 
 ```scala
 // Compute the total per region by summing the individual click counts per region.
-val clicksPerRegion: KTableS[String, Long] = userClicksStream
+val clicksPerRegion: TSKTable[String, Long] = userClicksStream
 
   // Join the stream against the table.
   .leftJoin(userRegionsTable, (clicks: Long, region: String) => (if (region == null) "UNKNOWN" else region, clicks))
@@ -52,18 +57,23 @@ val clicksPerRegion: KTableS[String, Long] = userClicksStream
   .map((_, regionWithClicks) => regionWithClicks)
 
   // Compute the total per region by summing the individual click counts per region.
-  .groupByKey(Serialized.`with`(stringSerde, longSerde))
+  .groupByKey
   .reduce(_ + _)
 ```
 
 > **Notes:** 
 > 
-> 1. The left quotes around "with" are there because `with` is a Scala keyword. This is the mechanism you use to "escape" a Scala keyword when it's used as a normal identifier in a Java library.
-> 2. Note that some methods, like `map`, take a two-argument function, for key-value pairs, rather than the more typical single argument.
+> 1. Note that some methods, like `map`, take a two-argument function,
+>    for key-value pairs, rather than the more typical single
+>    argument.
+
 
 ## Better Abstraction
 
-The wrapped Scala APIs also incur less boilerplate by taking advantage of Scala function literals that get converted to Java objects in the implementation of the API. Hence the surface syntax of the client API looks simpler and less noisy.
+The wrapped Scala APIs also incur less boilerplate by taking advantage
+of Scala function literals that get converted to Java objects in the
+implementation of the API. Hence the surface syntax of the client API
+looks simpler and less noisy.
 
 Here's an example of a snippet built using the Java API from Scala ..
 
@@ -78,31 +88,121 @@ val approximateWordCounts: KStream[String, Long] = textLines
 approximateWordCounts.to(outputTopic, Produced.`with`(Serdes.String(), longSerde))
 ```
 
-And here's the corresponding snippet using the Scala library. Note how the noise of `TransformerSupplier` has been abstracted out by the function literal syntax of Scala.
+And here's the corresponding snippet using the Scala library. Note how
+the noise of `TransformerSupplier` has been abstracted out by the
+function literal syntax of Scala.
 
 ```scala
 textLines
   .flatMapValues(value => value.toLowerCase.split("\\W+").toIterable)
   .transform(() => new ProbabilisticCounter, cmsStoreName)
-  .to(outputTopic, Produced.`with`(Serdes.String(), longSerde))
+  .to(outputTopic)
 ```
 
-Also, the explicit conversion `asJava` from a Scala `Iterable` to a Java `Iterable` is done for you by the Scala library.
+Also, the explicit conversion `asJava` from a Scala `Iterable` to a
+Java `Iterable` is done for you by the Scala library.
+
+## Runtime cost
+
+As any adaptor library, running this wrapper may incur into an
+overhead.  However, several techniques were followed to try to
+minimize the runtime overhead for using this library.
+
+We design the API so that the most overhead goes to the compiler
+system and out from the runtime and from the programmer.
+
+1. All the TSKType instances (i.e., the typesafe variants of the
+   streams and tables wrapping the Java API) are Value Classes, and
+   actual object creation is mostly always avoided. We avoided using
+   the `unsafely` API inside our own construction because that would
+   entail allocating a TSKStream object in order to use it as a
+   parameter for the UnsafelyWrapper case class.
+
+2. All the conversions between KTypes and TSKTypes are done with scala
+   objects (thus, statically allocated) implementing a converter
+   trait. The converter trait is public, which allows the user to
+   define further conversions in a future API version even if this
+   library is not yet updated. The conversions are marked @inline, so
+   the compiler may inline the conversions in the user code. Given
+   that the conversion is to a value class no actual operations are
+   performed, the worst-case result (not inlined) would be equivalent
+   to calling `identity`.
+
+3. Using `.safe` on a KType will use the aforementioned converter via
+   an intermediate implicit class (also a Value Class)conversion. The
+   bytecode generated bytecode is equivalent to calling a function
+   that calls identity.
+
 
 ## Implicit Serdes
 
-One of the areas where the Java APIs' verbosity can be reduced is through a succinct way to pass serializers and de-serializers to the various functions. The library implementation offers implicit serdes to provide the serializers and de-serializers but at the same time also *allows the opt-in to use the default serializers registered in the Kafka Streams config*.
+The Java API has, for many methods, two different interfaces
+available: one where you use an explicit Serdes-related type
+(Consumed, Produced, Materialized, et al.), and another without such
+parameter. In the later case, the default Serdes for keys and values
+would be used instead.
+ 
+In Java there is no notion of implicit parameters, and the only sane
+way to provide custom-value Serdes are using explicit parameters, thus
+making the methods signatures more cumbersome.
 
-The optional implicit pattern is implemented with the usual null-default-value trick, but with a difference. The technique used is adopted from [this blog post](http://missingfaktor.blogspot.in/2013/12/optional-implicit-trick-in-scala.html).
+Fortunately, in Scala we can leverage implicit parameters to make the
+compiler work to find out the appropriate instances for any Serde type
+that you have configured in your application.
 
-The standard way to implement the null-default-value trick could not be applied as Scala [does not allow](https://stackoverflow.com/questions/4652095/why-does-the-scala-compiler-disallow-overloaded-methods-with-default-arguments/4652681#4652681) a mix of default values and function overloads. And we have quite a few examples of such overloaded functions in the Kafka Streams API set.
+In the interest of type safety, the Scala API only provides a single
+interface, where the appropriate Serdes-related type is filled
+implicitly as the last parameter.
 
-The implementation allows implicits for the `Serde`s or for `Serialized`, `Consumed` and `Produced`. The test examples demonstrate both, though the implicits for Serdes make a cleaner implementation.
+As a benefit, your application will not compile if you fail to provide
+the compiler an appropriate Serde for every operation where you might
+need one.
 
-The implementation does a trade-off in using the null-default-value trick as it moves some of the compile time errors to runtime.
+### Usage
+
+In order to use the packaged Serdes, you can just have in your file a
+
+```scala
+import com.openshine.kafka.streams.scala.typesafe.SerdeDerivations._
+```
+
+This will bring you into scope Serde instances for the default types
+(including scala.Long and java.lang.Long, for compatibility) as well
+as default implicit definitions that can construct Serde-derived types
+(Consumed, Produced, Materialized, Joined) from a Serde. If you want
+to customize the definition of such constructors or disallow some from
+being brought into scope, take a look at the typesafe.derivations
+package. You can create your own custom derivations by extending the
+available traits in that package.
+
+A recommended way of working is having your own SerdeDerivations
+extending from ours that includes Serde instances for your
+domain-specific data types.
+
+
+### Customization
+
+If you need to pass a customized certain Materialized instance (for
+example) you can always provide an explicit instance for such a case.
+
+### Criticism
+
+This means that you will never use the default serdes that you may
+have configured in the StreamsConfig. Given that the resulting
+implementation performs equivalently by definition, we seem this
+argument as not constructive.
+
 
 ### Examples
 
-1. The example [StreamToTableJoinScalaIntegrationTestImplicitSerdes](https://github.com/lightbend/kafka-streams-scala/blob/develop/src/test/scala/com/lightbend/kafka/scala/streams/StreamToTableJoinScalaIntegrationTestImplicitSerdes.scala) demonstrates how to use the technique of implicit `Serde`s
-2. The example [StreamToTableJoinScalaIntegrationTestImplicitSerialized](https://github.com/lightbend/kafka-streams-scala/blob/develop/src/test/scala/com/lightbend/kafka/scala/streams/StreamToTableJoinScalaIntegrationTestImplicitSerialized.scala) demonstrates how to use the technique of implicit `Serialized`, `Consumed` and `Produced`.
-3. The example [StreamToTableJoinScalaIntegrationTestMixImplicitSerialized](https://github.com/lightbend/kafka-streams-scala/blob/develop/src/test/scala/com/lightbend/kafka/scala/streams/StreamToTableJoinScalaIntegrationTestMixImplicitSerialized.scala) demonstrates how to use the technique of how to use default serdes along with implicit `Serialized`, `Consumed` and `Produced`.
+1. The example
+   [StreamToTableJoinScalaIntegrationTestImplicitSerdes](https://github.com/openshine/kafka-streams-scala/blob/develop/src/test/scala/com/openshine/kafka/streams/scala/StreamToTableJoinScalaIntegrationTestImplicitSerdes.scala)
+   demonstrates how to use the technique of implicit `Serde`s
+2. The example
+   [StreamToTableJoinScalaIntegrationTestImplicitSerialized](https://github.com/openshine/kafka-streams-scala/blob/develop/src/test/scala/com/openshine/kafka/streams/scala/StreamToTableJoinScalaIntegrationTestImplicitSerialized.scala)
+   demonstrates how to use the technique of implicit `Serialized`,
+   `Consumed` and `Produced`.
+3. The example
+   [StreamToTableJoinScalaIntegrationTestMixImplicitSerialized](https://github.com/openshine/kafka-streams-scala/blob/develop/src/test/scala/com/openshine/kafka/streams/scala/StreamToTableJoinScalaIntegrationTestMixImplicitSerialized.scala)
+   demonstrates how to use the technique of how to use default serdes
+   along with implicit `Serialized`, `Consumed` and `Produced`.
