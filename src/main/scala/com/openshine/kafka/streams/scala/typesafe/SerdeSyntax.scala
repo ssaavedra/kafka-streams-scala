@@ -25,14 +25,18 @@ import scala.language.implicitConversions
   */
 trait SerdeSyntax {
 
-  implicit def tuple2serde[T](t: (Serializer[T], Deserializer[T])): Serde[T] = {
+  implicit def tuple2serde[T](
+      t: (Serializer[T], Deserializer[T])
+  ): Serde[T] = {
     new Serde[T] {
       override def deserializer(): Deserializer[T] = t._2
 
       override def serializer(): Serializer[T] = t._1
 
-      override def configure(configs: java.util.Map[String, _],
-                             isKey: Boolean): Unit = {
+      override def configure(
+          configs: java.util.Map[String, _],
+          isKey: Boolean
+      ): Unit = {
         t._1.configure(configs, isKey)
         t._2.configure(configs, isKey)
       }
@@ -46,11 +50,12 @@ trait SerdeSyntax {
 
   implicit class FunctionAsSerializer[T](f: T => Array[Byte]) {
     def asSerializer: Serializer[T] = new Serializer[T] {
-      override def configure(configs: java.util.Map[String, _], isKey: Boolean)
-      : Unit = {}
+      override def configure(
+          configs: java.util.Map[String, _],
+          isKey: Boolean
+      ): Unit = {}
 
-      override def serialize(topic: String,
-                             data: T): Array[Byte] = {
+      override def serialize(topic: String, data: T): Array[Byte] = {
         f(data)
       }
 
@@ -58,16 +63,20 @@ trait SerdeSyntax {
     }
   }
 
-  implicit class OptionalFunctionAsDeserializer[T](f: Array[Byte] => Option[T])
-                                                  (implicit ev: Null <:< T) {
+  implicit class OptionalFunctionAsDeserializer[T](
+      f: Array[Byte] => Option[T]
+  )(
+      implicit ev: Null <:< T
+  ) {
     def asDeserializer: Deserializer[T] = new Deserializer[T] {
-      override def configure(configs: java.util.Map[String, _], isKey: Boolean)
-      : Unit = {}
+      override def configure(
+          configs: java.util.Map[String, _],
+          isKey: Boolean
+      ): Unit = {}
 
       override def close(): Unit = {}
 
-      override def deserialize(topic: String,
-                               data: Array[Byte]): T = {
+      override def deserialize(topic: String, data: Array[Byte]): T = {
         f(data).orNull
       }
     }
@@ -75,13 +84,14 @@ trait SerdeSyntax {
 
   implicit class FunctionAsDeserializer[T](f: Array[Byte] => T) {
     def asDeserializer: Deserializer[T] = new Deserializer[T] {
-      override def configure(configs: java.util.Map[String, _], isKey: Boolean)
-      : Unit = {}
+      override def configure(
+          configs: java.util.Map[String, _],
+          isKey: Boolean
+      ): Unit = {}
 
       override def close(): Unit = {}
 
-      override def deserialize(topic: String,
-                               data: Array[Byte]): T = {
+      override def deserialize(topic: String, data: Array[Byte]): T = {
         f(data)
       }
     }

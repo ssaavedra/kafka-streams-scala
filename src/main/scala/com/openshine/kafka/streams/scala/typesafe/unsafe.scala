@@ -46,9 +46,9 @@ object unsafe {
     * @tparam K     the type of the key for this TSKType
     * @tparam V     the type of values for this TSKType
     */
-  implicit class UnsafelyWrapper[KType[_, _], K, V]
-  (private val inner: TSKType[KType, K, V])
-    extends AnyVal {
+  implicit class UnsafelyWrapper[KType[_, _], K, V](
+      private val inner: TSKType[KType, K, V]
+  ) extends AnyVal {
 
     /** Allows the user to perform potentially-unsafe operations with the
       * TSKType, which may be usesful for accessing properties not yet
@@ -80,11 +80,11 @@ object unsafe {
       *         on its underlying values
       */
     @inline
-    def unsafely[K1, V1, UnsafeDst[_, _], SafeDst[_, _]]
-    (transformer: KType[K, V] => UnsafeDst[K1, V1])
-    (implicit wrap: ConverterToTypeSafer[UnsafeDst, SafeDst])
-    : SafeDst[K1, V1] = wrap(transformer(inner.unsafe))
-
+    def unsafely[K1, V1, UnsafeDst[_, _], SafeDst[_, _]](
+        transformer: KType[K, V] => UnsafeDst[K1, V1]
+    )(
+        implicit wrap: ConverterToTypeSafer[UnsafeDst, SafeDst]
+    ): SafeDst[K1, V1] = wrap(transformer(inner.unsafe))
 
     /** Allows the user to perform potentially-unsafe operations with the
       * TSKType. Take note that this abstraction leaks Dst to the callee.

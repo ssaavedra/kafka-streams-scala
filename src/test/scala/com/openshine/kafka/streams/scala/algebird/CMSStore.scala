@@ -128,15 +128,17 @@ import org.apache.kafka.streams.state.StateSerdes
   *           implicits that can be imported.
   *           See [[com.twitter.algebird.CMSMonoid]] for further information.
   */
-class CMSStore[T: CMSHasher](override val name: String,
-                             val loggingEnabled: Boolean = true,
-                             val delta: Double = 1E-10,
-                             val eps: Double = 0.001,
-                             val seed: Int = 1,
-                             val heavyHittersPct: Double = 0.01)
-    extends StateStore {
+class CMSStore[T: CMSHasher](
+    override val name: String,
+    val loggingEnabled: Boolean = true,
+    val delta: Double = 1e-10,
+    val eps: Double = 0.001,
+    val seed: Int = 1,
+    val heavyHittersPct: Double = 0.01
+) extends StateStore {
 
-  private val cmsMonoid = TopPctCMS.monoid[T](eps, delta, seed, heavyHittersPct)
+  private val cmsMonoid =
+    TopPctCMS.monoid[T](eps, delta, seed, heavyHittersPct)
 
   /**
     * The "storage backend" of this store.
@@ -173,7 +175,8 @@ class CMSStore[T: CMSHasher](override val name: String,
   /**
     * For unit testing
     */
-  private[algebird] def cmsFrom(items: Seq[T]): TopCMS[T] = cmsMonoid.create(items)
+  private[algebird] def cmsFrom(items: Seq[T]): TopCMS[T] =
+    cmsMonoid.create(items)
 
   /**
     * For unit testing
@@ -186,11 +189,11 @@ class CMSStore[T: CMSHasher](override val name: String,
     * Initializes this store, including restoring the store's state from its changelog.
     */
   override def init(context: ProcessorContext, root: StateStore) {
-    val serdes = new StateSerdes[Integer, TopCMS[T]](
-      name,
-      Serdes.Integer(),
-      TopCMSSerde[T])
-    changeLogger = new CMSStoreChangeLogger[Integer, TopCMS[T]](name, context, serdes)
+    val serdes = new StateSerdes[Integer, TopCMS[T]](name,
+                                                     Serdes.Integer(),
+                                                     TopCMSSerde[T])
+    changeLogger =
+      new CMSStoreChangeLogger[Integer, TopCMS[T]](name, context, serdes)
 
     // Note: We must manually guard with `loggingEnabled` here because `context.register()` ignores
     // that parameter.
@@ -198,8 +201,7 @@ class CMSStore[T: CMSHasher](override val name: String,
       context.register(root, loggingEnabled, (_, value) => {
         if (value == null) {
           cms = cmsMonoid.zero
-        }
-        else {
+        } else {
           cms = serdes.valueFrom(value)
         }
       })
@@ -260,7 +262,9 @@ class CMSStore[T: CMSHasher](override val name: String,
     */
   override def flush() {
     if (loggingEnabled) {
-      changeLogger.logChange(changelogKey, cms, timestampOfLastStateStoreUpdate)
+      changeLogger.logChange(changelogKey,
+                             cms,
+                             timestampOfLastStateStoreUpdate)
     }
   }
 

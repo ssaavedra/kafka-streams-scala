@@ -44,26 +44,34 @@ import scala.language.implicitConversions
   * completeness.
   */
 object Materialized {
-  def apply[K, V](implicit keySerde: Serde[K],
-                  valueSerde: Serde[V]): MaterializedBuilder[K, V] = {
+  def apply[K, V](
+      implicit keySerde: Serde[K],
+      valueSerde: Serde[V]
+  ): MaterializedBuilder[K, V] = {
     new MaterializedBuilder(keySerde, valueSerde)
   }
 
-  def as[K, V, S <: StateStore](stateStoreName: String)
-                               (implicit keySerde: Serde[K],
-                                valueSerde: Serde[V]): Base[K, V, S] = {
+  def as[K, V, S <: StateStore](
+      stateStoreName: String
+  )(implicit keySerde: Serde[K], valueSerde: Serde[V]): Base[K, V, S] = {
     Base.as(stateStoreName).withKeySerde(keySerde).withValueSerde(valueSerde)
   }
 
-  class MaterializedBuilder[K, V](val keySerde: Serde[K],
-                                  val valueSerde: Serde[V]) {
+  class MaterializedBuilder[K, V](
+      val keySerde: Serde[K],
+      val valueSerde: Serde[V]
+  ) {
     def as[S <: StateStore](stateStoreName: String): Base[K, V, S] =
-      Base.as(stateStoreName).withKeySerde(keySerde).withValueSerde(valueSerde)
+      Base
+        .as(stateStoreName)
+        .withKeySerde(keySerde)
+        .withValueSerde(valueSerde)
 
   }
 
-  implicit def builderAsBase[K, V, S <: StateStore]
-  (builder: MaterializedBuilder[K, V]): Base[K, V, S] =
+  implicit def builderAsBase[K, V, S <: StateStore](
+      builder: MaterializedBuilder[K, V]
+  ): Base[K, V, S] =
     Base.`with`(builder.keySerde, builder.valueSerde)
 
 }

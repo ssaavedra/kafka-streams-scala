@@ -28,15 +28,25 @@ import org.apache.kafka.streams.state.StateSerdes
   * behavior.  If you intend to work on byte arrays as key, for example, you may want to wrap them
   * with the [[org.apache.kafka.common.utils.Bytes]] class.
   */
-class CMSStoreChangeLogger[K, V](val storeName: String,
-                                 val context: ProcessorContext,
-                                 val partition: Int,
-                                 val serialization: StateSerdes[K, V]) {
+class CMSStoreChangeLogger[K, V](
+    val storeName: String,
+    val context: ProcessorContext,
+    val partition: Int,
+    val serialization: StateSerdes[K, V]
+) {
 
-  private val topic = ProcessorStateManager.storeChangelogTopic(context.applicationId, storeName)
-  private val collector = context.asInstanceOf[RecordCollector.Supplier].recordCollector
+  private val topic = ProcessorStateManager.storeChangelogTopic(
+    context.applicationId,
+    storeName
+  )
+  private val collector =
+    context.asInstanceOf[RecordCollector.Supplier].recordCollector
 
-  def this(storeName: String, context: ProcessorContext, serialization: StateSerdes[K, V]) {
+  def this(
+      storeName: String,
+      context: ProcessorContext,
+      serialization: StateSerdes[K, V]
+  ) {
     this(storeName, context, context.taskId.partition, serialization)
   }
 
@@ -44,7 +54,13 @@ class CMSStoreChangeLogger[K, V](val storeName: String,
     if (collector != null) {
       val keySerializer = serialization.keySerializer
       val valueSerializer = serialization.valueSerializer
-      collector.send(this.topic, key, value, this.partition, timestamp, keySerializer, valueSerializer)
+      collector.send(this.topic,
+                     key,
+                     value,
+                     this.partition,
+                     timestamp,
+                     keySerializer,
+                     valueSerializer)
     }
   }
 

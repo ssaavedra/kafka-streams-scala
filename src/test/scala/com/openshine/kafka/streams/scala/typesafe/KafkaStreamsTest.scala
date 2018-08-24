@@ -3,7 +3,6 @@
   * Copyright (C) 2018  <https://www.lightbend.com>
   * Adapted from the parent package
   */
-
 package com.openshine.kafka.streams.scala.typesafe
 
 import java.util.Properties
@@ -15,7 +14,9 @@ import minitest.TestSuite
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.streams.{KafkaStreams, KeyValue, StreamsBuilder, StreamsConfig}
 
-object KafkaStreamsTest extends TestSuite[KafkaLocalServer] with WordCountTestData {
+object KafkaStreamsTest
+    extends TestSuite[KafkaLocalServer]
+    with WordCountTestData {
 
   override def setup(): KafkaLocalServer = {
     val s = KafkaLocalServer(cleanOnStart = true, Some(localStateDir))
@@ -28,7 +29,6 @@ object KafkaStreamsTest extends TestSuite[KafkaLocalServer] with WordCountTestDa
   }
 
   test("should count words") { server =>
-
     server.createTopic(inputTopic)
     server.createTopic(outputTopic)
 
@@ -37,7 +37,8 @@ object KafkaStreamsTest extends TestSuite[KafkaLocalServer] with WordCountTestDa
     //
 
     val streamsConfiguration = new Properties()
-    streamsConfiguration.put(StreamsConfig.APPLICATION_ID_CONFIG, s"wordcount-${scala.util.Random.nextInt(100)}")
+    streamsConfiguration.put(StreamsConfig.APPLICATION_ID_CONFIG,
+                             s"wordcount-${scala.util.Random.nextInt(100)}")
     streamsConfiguration.put(StreamsConfig.CLIENT_ID_CONFIG, "wordcountgroup")
 
     streamsConfiguration.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, brokers)
@@ -51,7 +52,8 @@ object KafkaStreamsTest extends TestSuite[KafkaLocalServer] with WordCountTestDa
     val pattern = Pattern.compile("\\W+", Pattern.UNICODE_CHARACTER_CLASS)
 
     val wordCounts: TSKTable[String, Long] =
-      textLines.flatMapValues(v => pattern.split(v.toLowerCase))
+      textLines
+        .flatMapValues(v => pattern.split(v.toLowerCase))
         .groupBy((k, v) => v)
         .count
 
@@ -63,19 +65,25 @@ object KafkaStreamsTest extends TestSuite[KafkaLocalServer] with WordCountTestDa
     //
     // Step 2: Produce some input data to the input topic.
     //
-    val sender = MessageSender[String, String](brokers, classOf[StringSerializer].getName, classOf[StringSerializer].getName)
+    val sender =
+      MessageSender[String, String](brokers,
+                                    classOf[StringSerializer].getName,
+                                    classOf[StringSerializer].getName)
     val mvals = sender.batchWriteValue(inputTopic, inputValues)
 
     //
     // Step 3: Verify the application's output data.
     //
-    val listener = MessageListener(brokers, outputTopic, "wordcountgroup",
-      classOf[StringDeserializer].getName,
-      classOf[LongDeserializer].getName,
-      new RecordProcessor
-    )
+    val listener = MessageListener(brokers,
+                                   outputTopic,
+                                   "wordcountgroup",
+                                   classOf[StringDeserializer].getName,
+                                   classOf[LongDeserializer].getName,
+                                   new RecordProcessor)
 
-    val l = listener.waitUntilMinKeyValueRecordsReceived(expectedWordCounts.size, 30000)
+    val l =
+      listener.waitUntilMinKeyValueRecordsReceived(expectedWordCounts.size,
+                                                   30000)
 
     assertEquals(l.sortBy(_.key), expectedWordCounts.sortBy(_.key))
 
@@ -119,4 +127,3 @@ trait WordCountTestData {
     new KeyValue("слова", 1L)
   )
 }
-

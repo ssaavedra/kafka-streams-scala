@@ -5,13 +5,15 @@ object Dependencies {
 
   implicit class Exclude(module: ModuleID) {
     def log4jExclude: ModuleID =
-      module excludeAll(ExclusionRule("log4j"))
+      module.excludeAll(ExclusionRule("log4j"))
 
     def driverExclusions: ModuleID =
-      module.log4jExclude.exclude("com.google.guava", "guava")
+      module.log4jExclude
+        .exclude("com.google.guava", "guava")
         .excludeAll(ExclusionRule("org.slf4j"))
   }
 
+  //@formatter:off
   val kafkaStreams = "org.apache.kafka"                % "kafka-streams"     % KafkaVersion
   val scalaLogging = "com.typesafe.scala-logging"     %% "scala-logging"     % ScalaLoggingVersion
   val logback = "ch.qos.logback"                       % "logback-classic"   % LogbackVersion
@@ -21,4 +23,5 @@ object Dependencies {
   val minitestLaws = "io.monix"                       %% "minitest-laws"     % MinitestVersion
   val algebird = "com.twitter"                        %% "algebird-core"     % AlgebirdVersion
   val chill = "com.twitter"                           %% "chill"             % ChillVersion
+  //@formatter:on
 }

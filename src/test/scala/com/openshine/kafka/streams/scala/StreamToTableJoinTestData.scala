@@ -1,8 +1,7 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
- * Adapted from Confluent Inc. whose copyright is reproduced below.
- */
-
+  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+  * Adapted from Confluent Inc. whose copyright is reproduced below.
+  */
 /*
  * Copyright Confluent Inc.
  *
@@ -48,7 +47,8 @@ trait StreamToTableJoinTestData {
     new KeyValue("bob", "americas"),
     new KeyValue("chao", "asia"),
     new KeyValue("dave", "europe"),
-    new KeyValue("alice", "europe"), /* ...but moved to Europe some time later. */
+    new KeyValue("alice", "europe"),
+    /* ...but moved to Europe some time later. */
     new KeyValue("eve", "americas"),
     new KeyValue("fang", "asia")
   )
@@ -59,4 +59,3 @@ trait StreamToTableJoinTestData {
     new KeyValue("asia", 124L)
   )
 }
-

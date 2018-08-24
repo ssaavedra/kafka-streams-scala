@@ -20,37 +20,38 @@ import com.openshine.kafka.streams.scala.typesafe.ImplicitConverters._
 import org.apache.kafka.streams.kstream.{KTable, Materialized, Serialized}
 import org.apache.kafka.streams.{Consumed, StreamsBuilder}
 
-class TSKTable[K, V](protected[typesafe] override val unsafe: KTable[K, V])
-  extends AnyVal with TSKType[KTable, K, V] {
+class TSKTable[K, V](override protected[typesafe] val unsafe: KTable[K, V])
+    extends AnyVal
+    with TSKType[KTable, K, V] {
 
-  def map[KR, VR](selector: (K, V) => (KR, VR))
-                 (implicit serialized: Serialized[KR, VR])
-  : TSKGroupedTable[KR, VR] =
+  def map[KR, VR](
+      selector: (K, V) => (KR, VR)
+  )(implicit serialized: Serialized[KR, VR]): TSKGroupedTable[KR, VR] =
     unsafe
       .groupBy(selector.asKeyValueMapper, serialized)
       .safe
 
-  def mapValues[VR](mapper: V => VR)
-                   (implicit materialized: Materialized[K, VR, kvs])
-  : TSKTable[K, VR] =
+  def mapValues[VR](
+      mapper: V => VR
+  )(implicit materialized: Materialized[K, VR, kvs]): TSKTable[K, VR] =
     unsafe
       .mapValues[VR](mapper.asValueMapper, materialized)
       .safe
 
-  def filterValues(predicate: V => Boolean)
-                  (implicit materialized: Materialized[K, V, kvs])
-  : TSKTable[K, V] = this.filter((k, v) => predicate(v))
+  def filterValues(predicate: V => Boolean)(
+      implicit materialized: Materialized[K, V, kvs]
+  ): TSKTable[K, V] = this.filter((k, v) => predicate(v))
 
-  def filter(predicate: (K, V) => Boolean)
-            (implicit materialized: Materialized[K, V, kvs])
-  : TSKTable[K, V] =
+  def filter(
+      predicate: (K, V) => Boolean
+  )(implicit materialized: Materialized[K, V, kvs]): TSKTable[K, V] =
     unsafe
       .filter(predicate.asPredicate, materialized)
       .safe
 
-  def filterNot(predicate: (K, V) => Boolean)
-               (implicit materialized: Materialized[K, V, kvs])
-  : TSKTable[K, V] =
+  def filterNot(
+      predicate: (K, V) => Boolean
+  )(implicit materialized: Materialized[K, V, kvs]): TSKTable[K, V] =
     unsafe
       .filterNot(predicate.asPredicate, materialized)
       .safe
@@ -62,33 +63,30 @@ class TSKTable[K, V](protected[typesafe] override val unsafe: KTable[K, V])
       .toStream[KR](keyMapper.asKeyValueMapper)
       .safe
 
-  def groupBy[KR, VR](selector: (K, V) => (KR, VR))
-                     (implicit serialized: Serialized[KR, VR])
-  : TSKGroupedTable[KR, VR]
-  = unsafe
-    .groupBy(selector.asKeyValueMapper, serialized)
-    .safe
+  def groupBy[KR, VR](
+      selector: (K, V) => (KR, VR)
+  )(implicit serialized: Serialized[KR, VR]): TSKGroupedTable[KR, VR] =
+    unsafe
+      .groupBy(selector.asKeyValueMapper, serialized)
+      .safe
 
-  def join[VO, VR](other: TSKTable[K, VO],
-                   joiner: (V, VO) => VR)
-                  (implicit materialized: Materialized[K, VR, kvs])
-  : TSKTable[K, VR] =
+  def join[VO, VR](other: TSKTable[K, VO], joiner: (V, VO) => VR)(
+      implicit materialized: Materialized[K, VR, kvs]
+  ): TSKTable[K, VR] =
     unsafe
       .join[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
       .safe
 
-  def leftJoin[VO, VR](other: TSKTable[K, VO],
-                       joiner: (V, VO) => VR)
-                      (implicit materialized: Materialized[K, VR, kvs])
-  : TSKTable[K, VR] =
+  def leftJoin[VO, VR](other: TSKTable[K, VO], joiner: (V, VO) => VR)(
+      implicit materialized: Materialized[K, VR, kvs]
+  ): TSKTable[K, VR] =
     unsafe
       .leftJoin[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
       .safe
 
-  def outerJoin[VO, VR](other: TSKTable[K, VO],
-                        joiner: (V, VO) => VR)
-                       (implicit materialized: Materialized[K, VR, kvs])
-  : TSKTable[K, VR] =
+  def outerJoin[VO, VR](other: TSKTable[K, VO], joiner: (V, VO) => VR)(
+      implicit materialized: Materialized[K, VR, kvs]
+  ): TSKTable[K, VR] =
     unsafe
       .outerJoin[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
       .safe
@@ -98,6 +96,7 @@ class TSKTable[K, V](protected[typesafe] override val unsafe: KTable[K, V])
 }
 
 object TSKTable {
+
   /** Creates a new TSKStream from a topic, given an implicit StreamsBuilder
     * and the appropriate Serde instances for the types you want to read from
     * the topic.
@@ -110,8 +109,9 @@ object TSKTable {
     * @tparam V the type of values to be read from the topic
     * @return
     */
-  def apply[K, V](topic: String)
-                 (implicit builder: StreamsBuilder,
-                  consumed: Consumed[K, V]): TSKTable[K, V] =
+  def apply[K, V](topic: String)(
+      implicit builder: StreamsBuilder,
+      consumed: Consumed[K, V]
+  ): TSKTable[K, V] =
     new TSKTable[K, V](builder.table(topic, consumed))
 }

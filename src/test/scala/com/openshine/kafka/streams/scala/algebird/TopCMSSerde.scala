@@ -24,7 +24,10 @@ import org.apache.kafka.common.serialization._
 
 class TopCMSSerializer[T] extends Serializer[TopCMS[T]] {
 
-  override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {
+  override def configure(
+      configs: util.Map[String, _],
+      isKey: Boolean
+  ): Unit = {
     // nothing to do
   }
 
@@ -40,14 +43,21 @@ class TopCMSSerializer[T] extends Serializer[TopCMS[T]] {
 
 class TopCMSDeserializer[T] extends Deserializer[TopCMS[T]] {
 
-  override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {
+  override def configure(
+      configs: util.Map[String, _],
+      isKey: Boolean
+  ): Unit = {
     // nothing to do
   }
 
   override def deserialize(topic: String, bytes: Array[Byte]): TopCMS[T] =
     if (bytes == null) null
-    else if (bytes.isEmpty) throw new SerializationException("byte array must not be empty")
-    else ScalaKryoInstantiator.defaultPool.fromBytes(bytes).asInstanceOf[TopCMS[T]]
+    else if (bytes.isEmpty)
+      throw new SerializationException("byte array must not be empty")
+    else
+      ScalaKryoInstantiator.defaultPool
+        .fromBytes(bytes)
+        .asInstanceOf[TopCMS[T]]
 
   override def close(): Unit = {
     // nothing to do
@@ -76,6 +86,7 @@ class TopCMSDeserializer[T] extends Deserializer[TopCMS[T]] {
   */
 object TopCMSSerde {
 
-  def apply[T]: Serde[TopCMS[T]] = Serdes.serdeFrom(new TopCMSSerializer[T], new TopCMSDeserializer[T])
+  def apply[T]: Serde[TopCMS[T]] =
+    Serdes.serdeFrom(new TopCMSSerializer[T], new TopCMSDeserializer[T])
 
 }

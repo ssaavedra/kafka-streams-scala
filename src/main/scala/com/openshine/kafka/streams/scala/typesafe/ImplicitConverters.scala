@@ -16,7 +16,6 @@
 
 package com.openshine.kafka.streams.scala.typesafe
 
-
 import org.apache.kafka.streams.kstream._
 
 import scala.language.higherKinds
@@ -41,61 +40,65 @@ object ImplicitConverters {
     def apply[K, V](src: Src[K, V]): Dst[K, V]
   }
 
-  implicit class KTypeSafeProvider[K, V, Src[_, _]]
-  (val inner: Src[K, V])
-    extends AnyVal {
+  implicit class KTypeSafeProvider[K, V, Src[_, _]](val inner: Src[K, V])
+      extends AnyVal {
     @inline
-    def safe[Dst[_, _]](implicit wrap: ConverterToTypeSafer[Src, Dst])
-    : Dst[K, V] =
+    def safe[Dst[_, _]](
+        implicit wrap: ConverterToTypeSafer[Src, Dst]
+    ): Dst[K, V] =
       wrap(inner)
   }
 
   implicit object TSKGroupedStreamAuto
-    extends ConverterToTypeSafer[KGroupedStream, TSKGroupedStream] {
+      extends ConverterToTypeSafer[KGroupedStream, TSKGroupedStream] {
     @inline
-    override def apply[K, V](src: KGroupedStream[K, V])
-    : TSKGroupedStream[K, V] =
+    override def apply[K, V](
+        src: KGroupedStream[K, V]
+    ): TSKGroupedStream[K, V] =
       new TSKGroupedStream(src)
   }
 
   implicit object TSKStreamAuto
-    extends ConverterToTypeSafer[KStream, TSKStream] {
+      extends ConverterToTypeSafer[KStream, TSKStream] {
     @inline
-    override def apply[K, V](src: KStream[K, V])
-    : TSKStream[K, V] =
+    override def apply[K, V](src: KStream[K, V]): TSKStream[K, V] =
       new TSKStream(src)
   }
 
   implicit object TSKTableAuto
-    extends ConverterToTypeSafer[KTable, TSKTable] {
+      extends ConverterToTypeSafer[KTable, TSKTable] {
     @inline
-    override def apply[K, V](src: KTable[K, V])
-    : TSKTable[K, V] =
+    override def apply[K, V](src: KTable[K, V]): TSKTable[K, V] =
       new TSKTable(src)
   }
 
   implicit object TSKGroupedTableAuto
-    extends ConverterToTypeSafer[KGroupedTable, TSKGroupedTable] {
+      extends ConverterToTypeSafer[KGroupedTable, TSKGroupedTable] {
     @inline
-    override def apply[K, V](src: KGroupedTable[K, V])
-    : TSKGroupedTable[K, V] =
+    override def apply[K, V](
+        src: KGroupedTable[K, V]
+    ): TSKGroupedTable[K, V] =
       new TSKGroupedTable(src)
   }
 
   implicit object TSSessionWindowedKStreamAuto
-    extends ConverterToTypeSafer[SessionWindowedKStream,
-      TSSessionWindowedKStream] {
+      extends ConverterToTypeSafer[
+        SessionWindowedKStream,
+        TSSessionWindowedKStream
+      ] {
     @inline
-    override def apply[K, V](src: SessionWindowedKStream[K, V])
-    : TSSessionWindowedKStream[K, V] =
+    override def apply[K, V](
+        src: SessionWindowedKStream[K, V]
+    ): TSSessionWindowedKStream[K, V] =
       new TSSessionWindowedKStream(src)
   }
 
   implicit object TSTimeWindowedKStreamAuto
-    extends ConverterToTypeSafer[TimeWindowedKStream, TSTimeWindowedKStream] {
+      extends ConverterToTypeSafer[TimeWindowedKStream, TSTimeWindowedKStream] {
     @inline
-    override def apply[K, V](src: TimeWindowedKStream[K, V])
-    : TSTimeWindowedKStream[K, V] =
+    override def apply[K, V](
+        src: TimeWindowedKStream[K, V]
+    ): TSTimeWindowedKStream[K, V] =
       new TSTimeWindowedKStream(src)
   }
 

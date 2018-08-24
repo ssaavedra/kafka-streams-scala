@@ -18,7 +18,6 @@ package com.openshine.kafka.streams.scala
 
 import org.apache.kafka.common.serialization.{Deserializer => JDeserializer, Serde => JSerde, Serializer => JSerializer}
 
-
 /** A scala.Serde is just a [[JSerde]] with direct methods for serializing
   * and deserializing values.
   *
@@ -41,8 +40,10 @@ class JavaSerdeWrapper[T >: Null](val inner: JSerde[T]) extends Serde[T] {
     */
   def topic: String = "unknown-topic"
 
-  override def configure(configs: java.util.Map[String, _],
-                         isKey: Boolean): Unit =
+  override def configure(
+      configs: java.util.Map[String, _],
+      isKey: Boolean
+  ): Unit =
     inner.configure(configs, isKey)
 
   override def deserializer(): JDeserializer[T] = inner.deserializer()
@@ -52,34 +53,34 @@ class JavaSerdeWrapper[T >: Null](val inner: JSerde[T]) extends Serde[T] {
   override def close(): Unit = inner.close()
 
   override def deserialize(data: Array[Byte]): Option[T] = {
-    val d = inner.deserializer()
+    val d      = inner.deserializer()
     val result = Option(d.deserialize(topic, data))
     d.close()
     result
   }
 
-
   override def serialize(data: T): Array[Byte] = {
-    val s = inner.serializer()
+    val s      = inner.serializer()
     val result = s.serialize(topic, data)
     s.close()
     result
   }
 }
 
-
-trait StatelessScalaSerde[T >: Null] extends Serde[T]
-{
+trait StatelessScalaSerde[T >: Null] extends Serde[T] {
   import com.openshine.kafka.streams.scala.typesafe.SerdeSyntax._
 
-  override def deserializer(): JDeserializer[T] = (deserialize _).asDeserializer
+  override def deserializer(): JDeserializer[T] =
+    (deserialize _).asDeserializer
 
   override def serializer(): JSerializer[T] = (serialize _).asSerializer
 }
 
 trait Deserializer[T >: Null] extends JDeserializer[T] {
-  override def configure(configs: java.util.Map[String, _],
-                         isKey: Boolean): Unit = ()
+  override def configure(
+      configs: java.util.Map[String, _],
+      isKey: Boolean
+  ): Unit = ()
 
   override def close(): Unit = ()
 
@@ -90,8 +91,10 @@ trait Deserializer[T >: Null] extends JDeserializer[T] {
 }
 
 trait Serializer[T] extends JSerializer[T] {
-  override def configure(configs: java.util.Map[String, _],
-                         isKey: Boolean): Unit = ()
+  override def configure(
+      configs: java.util.Map[String, _],
+      isKey: Boolean
+  ): Unit = ()
 
   override def close(): Unit = ()
 

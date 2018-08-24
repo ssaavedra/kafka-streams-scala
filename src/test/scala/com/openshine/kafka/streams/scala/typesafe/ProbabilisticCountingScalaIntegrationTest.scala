@@ -3,7 +3,6 @@
   * Copyright (C) 2018  <https://www.lightbend.com>
   * Adapted from the parent package
   */
-
 /*
  * Copyright Confluent Inc.
  *
@@ -65,8 +64,9 @@ trait ProbabilisticCountingScalaIntegrationTestData {
   )
 }
 
-object ProbabilisticCountingScalaIntegrationTest extends TestSuite[KafkaLocalServer]
-  with ProbabilisticCountingScalaIntegrationTestData {
+object ProbabilisticCountingScalaIntegrationTest
+    extends TestSuite[KafkaLocalServer]
+    with ProbabilisticCountingScalaIntegrationTestData {
 
   override def setup(): KafkaLocalServer = {
     val s = KafkaLocalServer(true, Some(localStateDir))
@@ -79,7 +79,6 @@ object ProbabilisticCountingScalaIntegrationTest extends TestSuite[KafkaLocalSer
   }
 
   test("shouldProbabilisticallyCountWords") { server =>
-
     server.createTopic(inputTopic)
     server.createTopic(outputTopic)
 
@@ -88,7 +87,10 @@ object ProbabilisticCountingScalaIntegrationTest extends TestSuite[KafkaLocalSer
     //
     val streamsConfiguration: Properties = {
       val p = new Properties()
-      p.put(StreamsConfig.APPLICATION_ID_CONFIG, s"probabilistic-counting-scala-integration-test-${scala.util.Random.nextInt(100)}")
+      p.put(
+        StreamsConfig.APPLICATION_ID_CONFIG,
+        s"probabilistic-counting-scala-integration-test-${scala.util.Random.nextInt(100)}"
+      )
       p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, brokers)
       p.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, "10000")
       p.put(StreamsConfig.STATE_DIR_CONFIG, localStateDir)
@@ -112,17 +114,23 @@ object ProbabilisticCountingScalaIntegrationTest extends TestSuite[KafkaLocalSer
     }
     builder.addStateStore(cmsStoreBuilder)
 
-    class ProbabilisticCounter extends Transformer[Array[Byte], String, (String, Long)] {
+    class ProbabilisticCounter
+        extends Transformer[Array[Byte], String, (String, Long)] {
 
       private var cmsState: CMSStore[String] = _
       private var processorContext: ProcessorContext = _
 
       override def init(processorContext: ProcessorContext): Unit = {
         this.processorContext = processorContext
-        cmsState = this.processorContext.getStateStore(cmsStoreName).asInstanceOf[CMSStore[String]]
+        cmsState = this.processorContext
+          .getStateStore(cmsStoreName)
+          .asInstanceOf[CMSStore[String]]
       }
 
-      override def transform(key: Array[Byte], value: String): (String, Long) = {
+      override def transform(
+          key: Array[Byte],
+          value: String
+      ): (String, Long) = {
         // Count the record value, think: "+ 1"
         cmsState.put(value, this.processorContext.timestamp())
 
@@ -137,32 +145,40 @@ object ProbabilisticCountingScalaIntegrationTest extends TestSuite[KafkaLocalSer
     }
 
     // Read the input from Kafka.
-    val textLines: TSKStream[Array[Byte], String] = TSKStream[Array[Byte], String](inputTopic)
+    val textLines: TSKStream[Array[Byte], String] =
+      TSKStream[Array[Byte], String](inputTopic)
 
     textLines
       .flatMapValues(value => value.toLowerCase.split("\\W+").toIterable)
       .transform(new ProbabilisticCounter, cmsStoreName)
       .to(outputTopic)
 
-    val streams: KafkaStreams = new KafkaStreams(builder.build(), streamsConfiguration)
+    val streams: KafkaStreams =
+      new KafkaStreams(builder.build(), streamsConfiguration)
     streams.start()
 
     //
     // Step 2: Publish some input text lines.
     //
-    val sender = MessageSender[String, String](brokers, classOf[StringSerializer].getName, classOf[StringSerializer].getName)
+    val sender =
+      MessageSender[String, String](brokers,
+                                    classOf[StringSerializer].getName,
+                                    classOf[StringSerializer].getName)
     val mvals = sender.batchWriteValue(inputTopic, inputTextLines)
 
     //
     // Step 3: Verify the application's output data.
     //
-    val listener = MessageListener(brokers, outputTopic, "probwordcountgroup",
-      classOf[StringDeserializer].getName,
-      classOf[LongDeserializer].getName,
-      new RecordProcessor
-    )
+    val listener = MessageListener(brokers,
+                                   outputTopic,
+                                   "probwordcountgroup",
+                                   classOf[StringDeserializer].getName,
+                                   classOf[LongDeserializer].getName,
+                                   new RecordProcessor)
 
-    val l = listener.waitUntilMinKeyValueRecordsReceived(expectedWordCounts.size, 30000)
+    val l =
+      listener.waitUntilMinKeyValueRecordsReceived(expectedWordCounts.size,
+                                                   30000)
 
     assertEquals(l.sortBy(_.key), expectedWordCounts.sortBy(_.key))
     streams.close()
