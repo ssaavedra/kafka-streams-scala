@@ -4,7 +4,7 @@ jdk: oraclejdk8
 scala:
 - 2.11.11
 - 2.12.4
-sbt_args: -mem 1500
+sbt_args: "-mem 1500"
 script:
 - sbt "++ ${TRAVIS_SCALA_VERSION}!" test
 cache:
@@ -14,3 +14,12 @@ cache:
 before_cache:
 - find $HOME/.sbt -name "*.lock" | xargs rm
 - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+deploy:
+  provider: script
+  script: sbt "++ ${TRAVIS_SCALA_VERSION}!" publish
+  on:
+    tags: true
+env:
+  global:
+  - secure: MGi1J2NS2jT8P4kiD7B1GS7ZgA2ptNQZkbWNgxDJLMUJ+gnLLlHoXZYxDg/GndV7d7ha5elfP+iB0oKVWh/UCz2Lt4RbCK0w+lu3mbRDjZ63nFGSv//E8enO5NwDga8PMmK8Yq2Db1/7eBJo7SO1L3+IYnF9tacf8KUuOtxEJm/solpBYssfF3cHltpVp6M5CIMxMAbLle2x2rfuE9NPsauWSrBCPisN8l39jD/i47caf/hKjTcapkFslFd1ImM3ZDwzlFpUMN7sM0i/M+b+zvOUwF+lTT9jAhaeV6xoYxgghjEJ0BJqL1iD/hDFJm6qt7miIdodRstvhtykTT37IGzmG3t/J89ceKbzyyD+rUTgmuTSZl03jNGFsXm42ncn7gzOsHXA7saC/zDU0qSpxciT/R0kQYgFCR8cOR8sam5EB/K7FtvHYXS+2fMWbcQ7ne8X91QfWZj2pamC/Vvhq7OHmf+gtDwVWwE/Mqqo93oFHjM7quSgL/jPz1mmI8aEavg2S+BQO3bkRUucpTVBsWdsqDQTDRzyitPdFAvweCH6Kr/4/7bbRNzgZlJJU5SgCfXiVJDLANujY1/1ZmhuQiYHbXnd+mXrWzSzNrC1atYWaIxN/d44OudoYnrJ2gpqk4jK0a7DTlHnVRwL5mfNwS8+gjJc5grjBCrPdybzrwo=
+  - secure: bm/06GoP5NnlXq556JKovaI7GmBIxTL8fEcJ970O8jd274DkCCABhCyWZ65aEa25jyLt7XHYGbHtQMYFVReLQYi0fXoff/J+xLDEPWuC2T/GKCfpqv1WeY9Ubp6WEdLlKBlk8dIpV88VWYc7U12xI614E6RxbM8XEbgpHfZI6Sfyn39f9Etpz5AuUcWkl9JnuWzPG0oYYRXQQ6eZZUV9BRqNgBIe4QCfYZ2eqcdwOW/2Xm9ZWcumcWD//LncwtZ1YH8PoTaqJpex1Qt1Qss4VuwUduM5QWjXVdTldQok/gVW5lOv0Nl9GOuWVF+pSpz/T5JsycfuE6nHSVCsuVAy2QMJc1OeUcxMW3iaw6ZXC4zofCEsjpieQDRvdf3cKEdOHcG8EalQtNd99TN6IxuaEzrTe0ZlrS6C+3f8IYaH6sJdi1wRyr7rSfyLU0VVUDNNpusJB6zJ4mh1m3kDF7kBN0O+6CPKFuJtY9UR6JCMCbvMxsWIZrkHQik7qdWrLqw7nmGzCuiG3nmzSpthBe+UYyt+9wMVYDplACK8sobbjrII16uARGso4tyij/RFWeA6WKVdPa7b8MdPV7QolG91HM0ZhlsCKoJHmxsen37zEHBJ5OU8zR/GZMJ8hHdmnpUxdJ/y9GBkztH/3GHGZGnFbmdHRhyVQxSlDNZccjnsP00=
