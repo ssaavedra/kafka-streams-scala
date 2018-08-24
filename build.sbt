@@ -30,9 +30,6 @@ licenses := Seq("Apache-2.0" ->
   url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 
 developers := List(
-  Developer("debasishg", "Debasish Ghosh", "@debasishg", url("https://github.com/debasishg")),
-  Developer("blublinsky", "Boris Lublinsky", "@blublinsky", url("https://github.com/blublinsky")),
-  Developer("maasg", "Gerard Maas", "@maasg", url("https://github.com/maasg")),
   Developer("ssaavedra", "Santiago Saavedra", "@ssaavedra", url("https://github.com/ssaavedra"))
 )
 
