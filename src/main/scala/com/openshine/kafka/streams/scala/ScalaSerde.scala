@@ -16,6 +16,8 @@
 
 package com.openshine.kafka.streams.scala
 
+import java.util
+
 import org.apache.kafka.common.serialization.{Deserializer => JDeserializer, Serde => JSerde, Serializer => JSerializer}
 
 /** A scala.Serde is just a [[JSerde]] with direct methods for serializing
@@ -26,6 +28,11 @@ import org.apache.kafka.common.serialization.{Deserializer => JDeserializer, Ser
 trait Serde[T] extends JSerde[T] {
   def serialize(data: T): Array[Byte]
   def deserialize(data: Array[Byte]): Option[T]
+
+  override def configure(configs: util.Map[String, _], isKey: Boolean): Unit =
+    ()
+
+  override def close(): Unit = ()
 }
 
 /** An adaptor for Java-based serdes so that they meet the Serde interface
