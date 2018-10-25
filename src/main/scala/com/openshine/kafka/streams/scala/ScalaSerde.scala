@@ -74,13 +74,16 @@ class JavaSerdeWrapper[T >: Null](val inner: JSerde[T]) extends Serde[T] {
   }
 }
 
-trait StatelessScalaSerde[T >: Null] extends Serde[T] {
-  import com.openshine.kafka.streams.scala.typesafe.SerdeSyntax._
+trait StatelessScalaSerde[T >: Null] extends Serde[T] { self =>
+  override def deserializer(): JDeserializer[T] = new Deserializer[T] {
+    override def deserialize(
+      data: Array[Byte]
+    ): Option[T] = self.deserialize(data)
+  }
 
-  override def deserializer(): JDeserializer[T] =
-    (deserialize _).asDeserializer
-
-  override def serializer(): JSerializer[T] = (serialize _).asSerializer
+  override def serializer(): JSerializer[T] = new Serializer[T] {
+    override def serialize(data: T): Array[Byte] = self.serialize(data)
+  }
 }
 
 trait Deserializer[T >: Null] extends JDeserializer[T] {
