@@ -4,16 +4,19 @@ name := "kafka-streams-scala"
 
 organization := "com.openshine"
 
-scalaVersion := Versions.Scala_2_12_Version
+scalaVersion := Versions.Scala_2_13_Version
 
 crossScalaVersions := Versions.CrossScalaVersions
 
-scalacOptions := Seq("-Xexperimental",
-                     "-unchecked",
+scalacOptions := Seq("-unchecked",
                      "-deprecation",
-                     "-Ywarn-unused-import")
+                     // "-Ywarn-unused-import",
+                     )
 
-parallelExecution in Test := false
+Test / parallelExecution := false
+
+Test / publishArtifact := false
+
 
 libraryDependencies ++= Seq(
   kafkaStreams excludeAll (ExclusionRule("org.slf4j", "slf4j-log4j12"), ExclusionRule(
@@ -29,8 +32,8 @@ libraryDependencies ++= Seq(
   curator % "test",
   minitest % "test",
   minitestLaws % "test",
-  algebird % "test",
-  chill % "test"
+  // algebird % "test",
+  // chill % "test"
 )
 
 testFrameworks += new TestFramework("minitest.runner.Framework")
@@ -58,8 +61,6 @@ scmInfo := Some(
 )
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
-
-publishArtifact in Test := false
 
 enablePlugins(GitVersioning)
 

@@ -49,6 +49,24 @@ object ImplicitConverters {
       wrap(inner)
   }
 
+  implicit object TSBranched
+    extends ConverterToTypeSafer[Repartitioned, TSRepartitioned] {
+    @inline
+    override def apply[K, V](
+        src: Repartitioned[K, V]
+    ): TSRepartitioned[K, V] =
+      new TSRepartitioned(src)
+  }
+
+  implicit object TSBranchedKStream
+      extends ConverterToTypeSafer[BranchedKStream, TSBranchedKStream] {
+    @inline
+    override def apply[K, V](
+        src: BranchedKStream[K, V]
+    ): TSBranchedKStream[K, V] =
+      new TSBranchedKStream(src)
+  }
+
   implicit object TSKGroupedStreamAuto
       extends ConverterToTypeSafer[KGroupedStream, TSKGroupedStream] {
     @inline
@@ -101,5 +119,4 @@ object ImplicitConverters {
     ): TSTimeWindowedKStream[K, V] =
       new TSTimeWindowedKStream(src)
   }
-
 }

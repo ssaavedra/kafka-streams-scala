@@ -17,79 +17,126 @@ package com.openshine.kafka.streams.scala.typesafe
 
 import com.openshine.kafka.streams.scala.FunctionConversions._
 import com.openshine.kafka.streams.scala.typesafe.ImplicitConverters._
-import org.apache.kafka.streams.kstream.{KTable, Materialized, Serialized}
-import org.apache.kafka.streams.{Consumed, StreamsBuilder}
+import org.apache.kafka.streams.kstream.{Consumed, Grouped, KTable, Materialized, Named, Suppressed}
+import org.apache.kafka.streams.StreamsBuilder
 
 class TSKTable[K, V](override protected[typesafe] val unsafe: KTable[K, V])
     extends AnyVal
     with TSKType[KTable, K, V] {
 
-  def map[KR, VR](
-      selector: (K, V) => (KR, VR)
-  )(implicit serialized: Serialized[KR, VR]): TSKGroupedTable[KR, VR] =
-    unsafe
-      .groupBy(selector.asKeyValueMapper, serialized)
-      .safe
-
   def mapValues[VR](
-      mapper: V => VR
-  )(implicit materialized: Materialized[K, VR, kvs]): TSKTable[K, VR] =
-    unsafe
-      .mapValues[VR](mapper.asValueMapper, materialized)
-      .safe
+      mapper: V => VR,
+      named: Option[Named] = None,
+  )(implicit materialized: Materialized[K, VR, kvs]): TSKTable[K, VR] = {
+    named.map(
+      unsafe
+        .mapValues[VR](mapper.asValueMapper, _, materialized)
+        .safe
+    ).getOrElse(
+      unsafe
+        .mapValues[VR](mapper.asValueMapper, materialized)
+        .safe
+    )
+  }
 
   def filterValues(predicate: V => Boolean)(
       implicit materialized: Materialized[K, V, kvs]
   ): TSKTable[K, V] = this.filter((k, v) => predicate(v))
 
   def filter(
-      predicate: (K, V) => Boolean
-  )(implicit materialized: Materialized[K, V, kvs]): TSKTable[K, V] =
-    unsafe
-      .filter(predicate.asPredicate, materialized)
-      .safe
+      predicate: (K, V) => Boolean,
+      named: Option[Named] = None,
+  )(implicit materialized: Materialized[K, V, kvs]): TSKTable[K, V] = {
+    named.map(
+      unsafe
+        .filter(predicate.asPredicate, _, materialized)
+        .safe
+    ).getOrElse(
+      unsafe
+        .filter(predicate.asPredicate, materialized)
+        .safe
+    )
+  }
 
   def filterNot(
-      predicate: (K, V) => Boolean
+      predicate: (K, V) => Boolean,
+        named: Option[Named] = None,
   )(implicit materialized: Materialized[K, V, kvs]): TSKTable[K, V] =
-    unsafe
-      .filterNot(predicate.asPredicate, materialized)
-      .safe
+    named.map(
+      unsafe
+        .filterNot(predicate.asPredicate, _, materialized)
+        .safe
+    ).getOrElse(
+      unsafe
+        .filterNot(predicate.asPredicate, materialized)
+        .safe
+    )
 
   def toStream: TSKStream[K, V] = unsafe.toStream.safe
 
-  def toStream[KR](keyMapper: (K, V) => KR): TSKStream[KR, V] =
-    unsafe
-      .toStream[KR](keyMapper.asKeyValueMapper)
-      .safe
+  def toStream(named: Named): TSKStream[K, V] = unsafe.toStream(named).safe
+
+  def toStream[KR](keyMapper: (K, V) => KR, named: Option[Named] = None): TSKStream[KR, V] = {
+    named.map(
+      unsafe
+        .toStream[KR](keyMapper.asKeyValueMapper, _)
+        .safe
+    ).getOrElse(
+      unsafe
+        .toStream[KR](keyMapper.asKeyValueMapper)
+        .safe
+    )
+  }
+
+  def suppress(suppresed: Suppressed[_ >: K]): TSKTable[K, V] =
+    unsafe.suppress(suppresed).safe
 
   def groupBy[KR, VR](
       selector: (K, V) => (KR, VR)
-  )(implicit serialized: Serialized[KR, VR]): TSKGroupedTable[KR, VR] =
+  )(implicit grouped: Grouped[KR, VR]): TSKGroupedTable[KR, VR] =
     unsafe
-      .groupBy(selector.asKeyValueMapper, serialized)
+      .groupBy(selector.asKeyValueMapper, grouped)
       .safe
 
-  def join[VO, VR](other: TSKTable[K, VO], joiner: (V, VO) => VR)(
+  def join[VO, VR](other: TSKTable[K, VO], named: Option[Named] = None)(joiner: (V, VO) => VR)(
       implicit materialized: Materialized[K, VR, kvs]
-  ): TSKTable[K, VR] =
-    unsafe
-      .join[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
-      .safe
+  ): TSKTable[K, VR] = {
+    named.map(named =>
+      unsafe
+        .join[VO, VR](other.unsafe, joiner.asValueJoiner, named, materialized)
+        .safe
+    ).getOrElse(
+      unsafe
+        .join[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
+        .safe
+    )
+  }
 
-  def leftJoin[VO, VR](other: TSKTable[K, VO], joiner: (V, VO) => VR)(
+  def leftJoin[VO, VR](other: TSKTable[K, VO], named: Option[Named] = None)(joiner: (V, VO) => VR)(
       implicit materialized: Materialized[K, VR, kvs]
   ): TSKTable[K, VR] =
-    unsafe
-      .leftJoin[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
-      .safe
+    named.map(named =>
+      unsafe
+        .leftJoin[VO, VR](other.unsafe, joiner.asValueJoiner, named, materialized)
+        .safe
+    ).getOrElse(
+      unsafe
+        .leftJoin[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
+        .safe
+    )
 
-  def outerJoin[VO, VR](other: TSKTable[K, VO], joiner: (V, VO) => VR)(
+  def outerJoin[VO, VR](other: TSKTable[K, VO], named: Option[Named] = None)(joiner: (V, VO) => VR)(
       implicit materialized: Materialized[K, VR, kvs]
   ): TSKTable[K, VR] =
-    unsafe
-      .outerJoin[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
-      .safe
+    named.map(named =>
+      unsafe
+        .outerJoin[VO, VR](other.unsafe, joiner.asValueJoiner, named, materialized)
+        .safe
+    ).getOrElse(
+      unsafe
+        .outerJoin[VO, VR](other.unsafe, joiner.asValueJoiner, materialized)
+        .safe
+    )
 
   def queryableStoreName: String = unsafe.queryableStoreName()
 

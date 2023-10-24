@@ -39,6 +39,11 @@ object FunctionConversions {
     def asValueJoiner: ValueJoiner[T, U, V]       = (v1, v2) => f(v1, v2)
   }
 
+  implicit class MapperFromFunction3[T, K, U, V](val f: (K, T, U) => V)
+      extends AnyVal {
+    def asKeyValueJoiner: ValueJoinerWithKey[K, T, U, V] = (k, v1, v2) => f(k, v1, v2)
+  }
+
   implicit class KeyValueMapperFromFunction[K, V, KR, VR](
       val f: (K, V) => (KR, VR)
   ) extends AnyVal {

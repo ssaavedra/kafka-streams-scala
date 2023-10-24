@@ -37,3 +37,10 @@ kafka-stream-q-example-dsl/project/build.properties
 
 kafka-stream-q-example-proc/src/main/resources/application-proc.conf
 kafka-stream-q-example-dsl/src/main/resources/application-dsl.conf
+
+# Metals
+.metals/
+.metals.bsp
+.bloop
+.bsp
+

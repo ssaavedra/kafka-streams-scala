@@ -16,11 +16,16 @@
 package com.openshine.kafka.streams.scala.typesafe
 
 import java.nio.ByteBuffer
-
 import org.apache.kafka.common.serialization.{Serde, Serdes}
-import org.apache.kafka.streams.Consumed
-import org.apache.kafka.streams.kstream.{Joined, Materialized, Produced, Serialized}
-import org.apache.kafka.streams.processor.StateStore
+import org.apache.kafka.streams.kstream.{Grouped, Joined, Materialized, Produced}
+import org.apache.kafka.streams.processor.{StateStore, StreamPartitioner}
+
+import scala.jdk.CollectionConverters._
+import scala.jdk.OptionConverters._
+
+
+import java.util
+import java.util.Optional
 
 /** Many default derivations, provided as standalone universal traits that
   * can be mixed in anywhere.
@@ -35,16 +40,7 @@ package object derivations {
         implicit key: Serde[K],
         value: Serde[V]
     ): Materialized[K, V, S] = {
-      util.Materialized[K, V]
-    }
-  }
-
-  trait serialized extends Any {
-    implicit def serializedFromSerdes[K, V](
-        implicit key: Serde[K],
-        value: Serde[V]
-    ): Serialized[K, V] = {
-      Serialized.`with`(key, value)
+      Materialized.`with`(key, value)
     }
   }
 
@@ -57,12 +53,12 @@ package object derivations {
     }
   }
 
-  trait consumed extends Any {
-    implicit def consumedFromSerdes[K, V](
+  trait grouped extends Any {
+    implicit def groupedFromSerdes[K, V](
         implicit key: Serde[K],
         value: Serde[V]
-    ): Consumed[K, V] = {
-      Consumed.`with`(key, value)
+    ): Grouped[K, V] = {
+      Grouped.`with`(key, value)
     }
   }
 
@@ -74,6 +70,28 @@ package object derivations {
     ): Joined[K, V, VO] = {
       Joined.`with`(key, value, value2)
     }
+  }
+
+  trait repartitioned extends Any {
+    implicit def repartitionedFromSerdes[K, V](
+        implicit key: Serde[K],
+        value: Serde[V]
+    ): TSRepartitioned[K, V] =
+      TSRepartitioned.fromSerde(key, value)
+  }
+
+  trait streampartitioner extends Any {
+    implicit def streamPartitionerFromFunction[K, V](
+        implicit f: (String, K, V, Int) => Option[Set[Int]]
+    ): StreamPartitioner[K, V] =
+      new StreamPartitioner[K, V] {
+        override def partition(topic: String, key: K, value: V, numPartitions: Int): Integer =
+          f(topic, key, value, numPartitions).flatMap(_.headOption.map(Integer.valueOf)).orNull
+        override def partitions(topic: String, key: K, value: V, numPartitions: Int): Optional[util.Set[Integer]] = {
+          val r = f(topic, key, value, numPartitions)
+          r.map(_.map(Integer.valueOf).asJava).toJava
+        }
+      }
   }
 
   trait defaultSerdes {
@@ -93,11 +111,11 @@ package object derivations {
 
   trait Default
       extends defaultSerdes
-      with serialized
       with produced
-      with consumed
+      with grouped
       with joined
       with materialized
+      with repartitioned
 
   object Default extends Default
 
