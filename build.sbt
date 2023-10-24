@@ -4,7 +4,7 @@ name := "kafka-streams-scala"
 
 organization := "com.openshine"
 
-scalaVersion := Versions.Scala_2_13_Version
+scalaVersion := Versions.Scala_2_12_Version
 
 crossScalaVersions := Versions.CrossScalaVersions
 
@@ -32,8 +32,8 @@ libraryDependencies ++= Seq(
   curator % "test",
   minitest % "test",
   minitestLaws % "test",
-  // algebird % "test",
-  // chill % "test"
+  algebird % "test",
+  chill % "test"
 )
 
 testFrameworks += new TestFramework("minitest.runner.Framework")

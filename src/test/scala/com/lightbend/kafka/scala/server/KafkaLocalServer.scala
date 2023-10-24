@@ -8,42 +8,45 @@ package com.lightbend.kafka.scala.server
 
 import java.io.{File, IOException}
 import java.util.Properties
-
 import org.apache.curator.test.TestingServer
 import com.typesafe.scalalogging.LazyLogging
-
-import kafka.server.{KafkaConfig, KafkaServerStartable}
+import kafka.server.{KafkaConfig, KafkaServer}
 
 import scala.util.{Failure, Success, Try}
+import kafka.admin.RackAwareMode
+import org.apache.kafka.admin.AdminUtils
+import org.apache.kafka.clients.admin.AdminClient
+import org.apache.kafka.common.internals.Topic.{GROUP_METADATA_TOPIC_NAME, TRANSACTION_STATE_TOPIC_NAME}
+import org.apache.kafka.common.message.CreateTopicsRequestData.{CreatableTopic, CreateableTopicConfig, CreateableTopicConfigCollection}
+import org.apache.kafka.common.requests.ApiError
+import org.apache.kafka.common.utils.Time
 
-import kafka.admin.{AdminUtils, RackAwareMode}
-import kafka.utils.ZkUtils
+import java.util.concurrent.atomic.AtomicReference
+import scala.collection.Map
 
 class KafkaLocalServer private (
     kafkaProperties: Properties,
-    zooKeeperServer: ZooKeeperLocalServer
+    zooKeeperServer: ZooKeeperLocalServer,
 ) extends LazyLogging {
 
   import KafkaLocalServer._
 
-  private var broker = null.asInstanceOf[KafkaServerStartable]
-  private var zkUtils: ZkUtils =
-    ZkUtils.apply(s"localhost:${zooKeeperServer.getPort()}",
-                  DEFAULT_ZK_SESSION_TIMEOUT_MS,
-                  DEFAULT_ZK_CONNECTION_TIMEOUT_MS,
-                  false)
+  private var broker = null.asInstanceOf[KafkaServer]
+  private var client = null.asInstanceOf[AdminClient]
 
   def start(): Unit = {
 
-    broker = KafkaServerStartable.fromProps(kafkaProperties)
+    val cfg = new KafkaConfig(kafkaProperties)
+    broker = new KafkaServer(cfg, Time.SYSTEM, Some("test-local-kafka-server"))
     broker.startup()
   }
 
   def stop(): Unit = {
     if (broker != null) {
       broker.shutdown()
+      broker.awaitShutdown()
       zooKeeperServer.stop()
-      broker = null.asInstanceOf[KafkaServerStartable]
+      broker = null.asInstanceOf[KafkaServer]
     }
   }
 
@@ -67,6 +70,45 @@ class KafkaLocalServer private (
     createTopic(topic, partitions, replication, new Properties)
   }
 
+
+  private def convertToTopicConfigCollections(config: Properties): CreateableTopicConfigCollection = {
+    val topicConfigs = new CreateableTopicConfigCollection()
+    config.forEach {
+      case (name, value) =>
+        topicConfigs.add(new CreateableTopicConfig()
+          .setName(name.toString)
+          .setValue(value.toString))
+    }
+    topicConfigs
+  }
+
+  private def creatableTopic(topic: String)(implicit broker: KafkaServer): CreatableTopic = {
+    val config = broker.config
+    val groupCoordinator = broker.groupCoordinator
+    val txnCoordinator = broker.transactionCoordinator
+
+    topic match {
+      case GROUP_METADATA_TOPIC_NAME =>
+        new CreatableTopic()
+          .setName(topic)
+          .setNumPartitions(config.offsetsTopicPartitions)
+          .setReplicationFactor(config.offsetsTopicReplicationFactor)
+          .setConfigs(convertToTopicConfigCollections(groupCoordinator.groupMetadataTopicConfigs))
+      case TRANSACTION_STATE_TOPIC_NAME =>
+        new CreatableTopic()
+          .setName(topic)
+          .setNumPartitions(config.transactionTopicPartitions)
+          .setReplicationFactor(config.transactionTopicReplicationFactor)
+          .setConfigs(convertToTopicConfigCollections(
+            txnCoordinator.transactionTopicConfigs))
+      case topicName =>
+        new CreatableTopic()
+          .setName(topicName)
+          .setNumPartitions(config.numPartitions)
+          .setReplicationFactor(config.defaultReplicationFactor.shortValue)
+    }
+  }
+
   /**
     * Create a Kafka topic with the given parameters.
     *
@@ -81,15 +123,14 @@ class KafkaLocalServer private (
       replication: Int,
       topicConfig: Properties
   ): Unit = {
-    AdminUtils.createTopic(zkUtils,
-                           topic,
-                           partitions,
-                           replication,
-                           topicConfig,
-                           RackAwareMode.Enforced)
+    val topicErrors = new AtomicReference[Map[String, ApiError]]()
+    val cmq = null
+    broker.adminManager.createTopics(
+      10000, false, Map(topic -> creatableTopic(topic)(broker)), Map.empty, cmq, topicErrors.set
+    )
   }
 
-  def deleteTopic(topic: String) = AdminUtils.deleteTopic(zkUtils, topic)
+  def deleteTopic(topic: String) = broker.adminManager.deleteTopics(10000, Set(topic), null, (_) => ())
 }
 
 import Utils._
@@ -164,6 +205,7 @@ object KafkaLocalServer extends LazyLogging {
     kafkaProperties.put(KafkaConfig.ZkConnectProp,
                         s"localhost:$zookeeperServerPort")
     kafkaProperties.put(KafkaConfig.ZkConnectionTimeoutMsProp, "6000")
+    kafkaProperties.put(KafkaConfig.ZkSessionTimeoutMsProp, DEFAULT_ZK_SESSION_TIMEOUT_MS)
     kafkaProperties.put(KafkaConfig.BrokerIdProp, "0")
     kafkaProperties.put(KafkaConfig.NumNetworkThreadsProp, "3")
     kafkaProperties.put(KafkaConfig.NumIoThreadsProp, "8")

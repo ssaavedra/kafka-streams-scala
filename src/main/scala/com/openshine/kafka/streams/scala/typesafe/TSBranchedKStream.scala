@@ -4,7 +4,7 @@ import com.openshine.kafka.streams.scala.FunctionConversions._
 import com.openshine.kafka.streams.scala.typesafe.ImplicitConverters._
 import org.apache.kafka.streams.kstream.{Branched, BranchedKStream}
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 class TSBranchedKStream[K, V](override protected[typesafe] val unsafe: BranchedKStream[K, V])
   extends AnyVal
@@ -18,11 +18,11 @@ class TSBranchedKStream[K, V](override protected[typesafe] val unsafe: BranchedK
   }
 
   def defaultBranch(): Map[String, TSKStream[K, V]] =
-    unsafe.defaultBranch().asScala.view.mapValues(_.safe).toMap
+    unsafe.defaultBranch().asScala.mapValues(_.safe).toMap
 
   def defaultBranch(branched: TSBranched[K, V]): Map[String, TSKStream[K, V]] =
-    unsafe.defaultBranch(branched.unsafe).asScala.view.mapValues(_.safe).toMap
+    unsafe.defaultBranch(branched.unsafe).asScala.mapValues(_.safe).toMap
 
   def noDefaultBranch(): Map[String, TSKStream[K, V]] =
-    unsafe.noDefaultBranch().asScala.view.mapValues(_.safe).toMap
+    unsafe.noDefaultBranch().asScala.mapValues(_.safe).toMap
 }

@@ -17,14 +17,10 @@ package com.openshine.kafka.streams.scala.typesafe
 
 import java.nio.ByteBuffer
 import org.apache.kafka.common.serialization.{Serde, Serdes}
-import org.apache.kafka.streams.kstream.{Grouped, Joined, Materialized, Produced}
+import org.apache.kafka.streams.kstream.{Consumed, Grouped, Joined, Materialized, Produced}
 import org.apache.kafka.streams.processor.{StateStore, StreamPartitioner}
 
-import scala.jdk.CollectionConverters._
-import scala.jdk.OptionConverters._
-
-
-import java.util
+import scala.collection.JavaConverters._
 import java.util.Optional
 
 /** Many default derivations, provided as standalone universal traits that
@@ -50,6 +46,15 @@ package object derivations {
         value: Serde[V]
     ): Produced[K, V] = {
       Produced.`with`(key, value)
+    }
+  }
+
+  trait consumed extends Any {
+    implicit def consumedFromSerdes[K, V](
+        implicit key: Serde[K],
+        value: Serde[V],
+    ): Consumed[K, V] = {
+      Consumed.`with`(key, value)
     }
   }
 
@@ -87,9 +92,12 @@ package object derivations {
       new StreamPartitioner[K, V] {
         override def partition(topic: String, key: K, value: V, numPartitions: Int): Integer =
           f(topic, key, value, numPartitions).flatMap(_.headOption.map(Integer.valueOf)).orNull
-        override def partitions(topic: String, key: K, value: V, numPartitions: Int): Optional[util.Set[Integer]] = {
+        override def partitions(topic: String, key: K, value: V, numPartitions: Int): Optional[java.util.Set[Integer]] = {
           val r = f(topic, key, value, numPartitions)
-          r.map(_.map(Integer.valueOf).asJava).toJava
+          r.map(_.map(Integer.valueOf).asJava) match {
+            case Some(x) => Optional.of(x)
+            case None => Optional.empty()
+          }
         }
       }
   }
@@ -112,6 +120,7 @@ package object derivations {
   trait Default
       extends defaultSerdes
       with produced
+      with consumed
       with grouped
       with joined
       with materialized

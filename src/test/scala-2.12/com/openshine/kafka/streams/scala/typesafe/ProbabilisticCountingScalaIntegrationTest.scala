@@ -21,14 +21,14 @@
 package com.openshine.kafka.streams.scala.typesafe
 
 import java.util.Properties
-
 import com.lightbend.kafka.scala.server.{KafkaLocalServer, MessageListener, MessageSender, RecordProcessorTrait}
 import com.openshine.kafka.streams.scala.algebird.{CMSStore, CMSStoreBuilder}
 import minitest.TestSuite
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization._
 import org.apache.kafka.streams.kstream.Transformer
-import org.apache.kafka.streams.processor.ProcessorContext
+import org.apache.kafka.streams.processor.{ProcessorContext, api}
+import org.apache.kafka.streams.processor.api.Processor
 import org.apache.kafka.streams.{KafkaStreams, KeyValue, StreamsBuilder, StreamsConfig}
 
 /**
@@ -115,33 +115,31 @@ object ProbabilisticCountingScalaIntegrationTest
     builder.addStateStore(cmsStoreBuilder)
 
     class ProbabilisticCounter
-        extends Transformer[Array[Byte], String, (String, Long)] {
+        extends Processor[Array[Byte], String, String, Long] {
 
       private var cmsState: CMSStore[String] = _
       private var processorContext: ProcessorContext = _
 
-      override def init(processorContext: ProcessorContext): Unit = {
+      def init(processorContext: ProcessorContext): Unit = {
         this.processorContext = processorContext
         cmsState = this.processorContext
           .getStateStore(cmsStoreName)
           .asInstanceOf[CMSStore[String]]
       }
 
-      override def transform(
-          key: Array[Byte],
-          value: String
-      ): (String, Long) = {
+      override def process(record: api.Record[Array[Byte], String]): Unit = {
+        val value = record.value()
+
         // Count the record value, think: "+ 1"
         cmsState.put(value, this.processorContext.timestamp())
 
         // In this example: emit the latest count estimate for the record value.  We could also do
         // something different, e.g. periodically output the latest heavy hitters via `punctuate`.
-        (value, cmsState.get(value))
+        this.processorContext.forward(value, cmsState.get(value))
       }
 
-      override def punctuate(l: Long): (String, Long) = null
-
       override def close(): Unit = {}
+
     }
 
     // Read the input from Kafka.
@@ -150,7 +148,7 @@ object ProbabilisticCountingScalaIntegrationTest
 
     textLines
       .flatMapValues(value => value.toLowerCase.split("\\W+").toIterable)
-      .transform(new ProbabilisticCounter, cmsStoreName)
+      .process(() => new ProbabilisticCounter, cmsStoreName)
       .to(outputTopic)
 
     val streams: KafkaStreams =

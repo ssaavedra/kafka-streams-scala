@@ -18,10 +18,10 @@ package com.openshine.kafka.streams.scala.typesafe
 import com.openshine.kafka.streams.scala.FunctionConversions._
 import com.openshine.kafka.streams.scala.typesafe.ImplicitConverters._
 import org.apache.kafka.streams.{KeyValue, StreamsBuilder}
-import org.apache.kafka.streams.kstream._
+import org.apache.kafka.streams.kstream.{KeyValueMapper, _}
 import org.apache.kafka.streams.processor.api.{FixedKeyProcessorSupplier, Processor, ProcessorSupplier}
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 
 /**
@@ -76,9 +76,10 @@ class TSKStream[K, V](override protected[typesafe] val unsafe: KStream[K, V])
       keyValueMapper: (K, V) => GK,
       joiner: (V, GV) => RV
   ): TSKStream[K, RV] = {
+    val kvm: KeyValueMapper[K, V, GK] = (k: K, v: V) => keyValueMapper(k, v)
     val vj: ValueJoiner[V, GV, RV] = joiner(_, _)
     unsafe
-      .join[GK, GV, RV](globalKTable, (k: K, v: V) => keyValueMapper(k, v), vj)
+      .join[GK, GV, RV](globalKTable, kvm, vj)
       .safe
   }
 
@@ -151,7 +152,8 @@ class TSKStream[K, V](override protected[typesafe] val unsafe: KStream[K, V])
     unsafe.filterNot(predicate.asPredicate).safe
 
   def selectKey[KR](mapper: (K, V) => KR): TSKStream[KR, V] = {
-    unsafe.selectKey[KR]((k: K, v: V) => mapper(k, v)).safe
+    val kvm: KeyValueMapper[K, V, KR] = (k, v) => mapper(k, v)
+    unsafe.selectKey[KR](kvm).safe
   }
 
   def map[KR, VR](mapper: (K, V) => (KR, VR)): TSKStream[KR, VR] =
@@ -170,7 +172,9 @@ class TSKStream[K, V](override protected[typesafe] val unsafe: KStream[K, V])
             .asJava
       )
 
-    unsafe.flatMap[KR, VR]((k: K, v: V) => kvMapper((k, v))).safe
+    val kvm: KeyValueMapper[K, V, java.lang.Iterable[KeyValue[KR, VR]]] = (k: K, v: V) => kvMapper((k, v))
+
+    unsafe.flatMap[KR, VR](kvm).safe
   }
 
   def flatMapValues[VR](mapper: V => Iterable[VR]): TSKStream[K, VR] =

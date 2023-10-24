@@ -8,7 +8,7 @@ import java.nio.file.{FileVisitOption, Files, Paths}
 import java.util.Comparator
 
 import scala.util.Try
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Utils {
   def deleteDirectory(directory: File): Try[Unit] = Try {

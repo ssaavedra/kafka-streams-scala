@@ -21,13 +21,13 @@
 package com.openshine.kafka.streams.scala.typesafe
 
 import java.util.Properties
-
 import com.lightbend.kafka.scala.server.{KafkaLocalServer, MessageListener, MessageSender, RecordProcessorTrait}
 import com.openshine.kafka.streams.scala.StreamToTableJoinTestData
 import minitest.TestSuite
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization._
 import org.apache.kafka.streams._
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler
 import org.apache.kafka.streams.kstream.Produced
 
 /**
@@ -116,22 +116,20 @@ object StreamToTableJoinScalaIntegrationTestMixImplicitSerialized
       new KafkaStreams(builder.build, streamsConfiguration)
 
     streams.setUncaughtExceptionHandler(
-      new Thread.UncaughtExceptionHandler() {
-        override def uncaughtException(t: Thread, e: Throwable): Unit =
+      new StreamsUncaughtExceptionHandler {
+        override def handle(exception: Throwable): StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse = {
+          println(s"Stream terminated because of uncaught exception .. Shutting down app", exception)
+          exception.printStackTrace()
           try {
-            println(
-              s"Stream terminated because of uncaught exception .. Shutting down app",
-              e
-            )
-            e.printStackTrace
             val closed = streams.close()
             println(s"Exiting application after streams close ($closed)")
           } catch {
-            case x: Exception => x.printStackTrace
+            case x: Exception => x.printStackTrace()
           } finally {
             println("Exiting application ..")
-            System.exit(-1)
           }
+          StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION
+        }
       }
     )
 

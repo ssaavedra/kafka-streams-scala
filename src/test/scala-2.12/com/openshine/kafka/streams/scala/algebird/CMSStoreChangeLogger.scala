@@ -37,7 +37,8 @@ class CMSStoreChangeLogger[K, V](
 
   private val topic = ProcessorStateManager.storeChangelogTopic(
     context.applicationId,
-    storeName
+    storeName,
+    null
   )
   private val collector =
     context.asInstanceOf[RecordCollector.Supplier].recordCollector
@@ -57,10 +58,14 @@ class CMSStoreChangeLogger[K, V](
       collector.send(this.topic,
                      key,
                      value,
-                     this.partition,
+             null,
+                     partition,
                      timestamp,
                      keySerializer,
-                     valueSerializer)
+                     valueSerializer,
+                     "0",
+                     null
+      )
     }
   }
 
